@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGTK SULTENG - Kegiatan</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='LOGO.png') }}" alt="BGTK Sulteng" class="sidebar-logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <span class="sidebar-icon icon-dashboard" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 3h8v8H3V3zm10 0h8v5h-8V3zm0 7h8v11h-8V10zM3 13h8v8H3v-8z"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Dashboard</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin_kegiatan') }}" class="sidebar-link {% if 'kegiatan' in request.path and 'edit-kegiatan' not in request.path and 'detail' not in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-kegiatan" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
+                            <path d="M9 3V2h6v1m-5 5h4m-4 4h4m-4 4h4"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Kegiatan</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin_rekap_filter') }}" class="sidebar-link {% if 'rekap-filter' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-rekap" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10Z"/>
+                            <circle cx="12" cy="11" r="2.2"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Rekap Filter</span>
+                    </div>
+                </a>
+                {% if user_role != 'operator' %}
+                <a href="{{ url_for('admin_users') }}" class="sidebar-link {% if 'users' in request.path or 'edit-operator' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-users" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+                            <circle cx="10" cy="8" r="4"/>
+                            <path d="M21 21v-2a3 3 0 0 0-2-2.82m-3-11.65a3 3 0 0 1 0 5.94"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Operator</span>
+                    </div>
+                </a>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="sidebar-link sidebar-link--logout">
+                    <span class="sidebar-icon icon-logout" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 17l5-5-5-5"/>
+                            <path d="M20 12H9"/>
+                            <path d="M13 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Logout</span>
+                    </div>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="topbar">
+                <div class="topbar-title">Selamat Datang, {{ user_display_name or 'Admin' }}!</div>
+                <div class="profile-menu">
+                    <button type="button" class="profile-btn" id="profileBtn">Profil</button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="profile-name">{{ user_display_name or 'Admin' }}</div>
+                        <a href="{{ url_for('change_password') }}">Ubah Password</a>
+                    </div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="header">
+                    <div>
+                        <h1>Data Nama Kegiatan</h1>
+                        <p class="header-subtitle">Daftar semua kegiatan yang terdaftar dalam sistem.</p>
+                        {% if user_role != 'operator' %}
+                        <div style="margin-top: 15px;">
+                            <a href="{{ url_for('admin_tambah_kegiatan') }}" 
+                               style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #067ac1 0%, #045a96 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(6, 122, 193, 0.3); transition: box-shadow 0.2s ease;">
+                                Tambah Kegiatan
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages" style="display: none;">
+                            {% for category, message in messages %}
+                                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="kegiatan-card">
+                    {% if kegiatan_list %}
+                        <div class="kegiatan-table-wrapper">
+                            <table id="kegiatanTable" class="kegiatan-table">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th style="display: none;">ID</th>
+                                        <th>Nama Kegiatan</th>
+                                        <th>Jumlah Peserta</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for kegiatan in kegiatan_list %}
+                                    <tr>
+                                        <td></td>
+                                        <td style="display: none;">{{ kegiatan.kegiatan_id }}</td>
+                                        <td>{{ kegiatan.nama_kegiatan }}</td>
+                                        <td class="jumlah-cell" data-order="{{ kegiatan.jumlah_peserta }}">{{ kegiatan.jumlah_peserta }} orang</td>
+                                        <td class="action-cell">
+                                            <div class="action-buttons">
+                                                <a href="{{ url_for('admin_detail_kegiatan', nama_kegiatan=kegiatan.nama_kegiatan) }}" class="btn-view" style="text-decoration: none; display: inline-block;">
+                                                    Lihat
+                                                </a>
+                                                <a href="{% if user_role == 'operator' %}{{ url_for('operator_edit_kegiatan', kegiatan_id=kegiatan.kegiatan_id) }}{% else %}{{ url_for('admin_edit_kegiatan', kegiatan_id=kegiatan.kegiatan_id) }}{% endif %}" class="btn-edit-kegiatan" style="text-decoration: none; display: inline-block; padding: 6px 12px; margin: 0 4px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: box-shadow 0.2s ease;">
+                                                    Edit
+                                                </a>
+                                                {% if user_role != 'operator' %}
+                                                <form method="POST" action="{{ url_for('toggle_hide_kegiatan', kegiatan_id=kegiatan.kegiatan_id) }}" style="display: inline-block; margin: 0 4px;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" 
+                                                            class="btn-toggle-hide" 
+                                                            data-kegiatan-name="{{ kegiatan.nama_kegiatan }}"
+                                                            data-is-hidden="{{ kegiatan.is_hidden }}"
+                                                            onclick="confirmToggleHide(event, this); return false;"
+                                                            style="padding: 6px 12px; margin: 0; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: box-shadow 0.2s ease;">
+                                                        {% if kegiatan.is_hidden == 1 %}Tampilkan{% else %}Sembunyikan{% endif %}
+                                                    </button>
+                                                </form>
+                                                <!-- <button type="button"
+                                                class="btn-hapus-kegiatan"
+                                                        data-kegiatan-id="{{ kegiatan.kegiatan_id }}"
+                                                        data-kegiatan-name="{{ kegiatan.nama_kegiatan }}"
+                                                        data-jumlah-peserta="{{ kegiatan.jumlah_peserta }}"
+                                                        onclick="handleHapusKegiatanFromButton(this)"
+                                                        style="padding: 6px 12px; margin: 0 4px; background: #dc2626; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: box-shadow 0.2s ease;">
+                                                        Hapus
+                                                </button> -->
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>Belum ada data kegiatan yang terdaftar.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+    <style>
+        .action-cell {
+            white-space: nowrap;
+        }
+        .btn-view {
+            padding: 6px 12px;
+            margin: 0 4px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: box-shadow 0.2s ease;
+        }
+        .btn-view {
+            background: linear-gradient(135deg, #067ac1 0%, #045a96 100%);
+            color: white;
+        }
+        .btn-view:hover {
+            box-shadow: 0 2px 8px rgba(6, 122, 193, 0.4);
+        }
+        .btn-hapus-kegiatan {
+            padding: 6px 12px;
+            margin: 0 4px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease;
+        }
+        .btn-hapus-kegiatan:hover {
+            background: #b91c1c;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+        }
+        .btn-toggle-hide {
+            padding: 6px 12px;
+            margin: 0 4px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease;
+        }
+        .btn-toggle-hide:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-toggle-hide[data-is-hidden="1"] {
+            background: #10b981;
+        }
+        .btn-toggle-hide[data-is-hidden="0"] {
+            background: #f59e0b;
+        }
+        .btn-edit-kegiatan:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        /* DataTables Styling */
+        #kegiatanTable_wrapper {
+            margin-top: 0;
+        }
+        #kegiatanTable_wrapper .dataTables_filter {
+            margin-bottom: 15px;
+        }
+        #kegiatanTable_wrapper .dataTables_filter input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        #kegiatanTable_wrapper .dataTables_length select {
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        #kegiatanTable_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 10px;
+            margin: 0 2px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 12px;
+        }
+        #kegiatanTable_wrapper .dataTables_paginate .paginate_button.current {
+            background: #067ac1;
+            color: white;
+            border-color: #067ac1;
+        }
+        #kegiatanTable_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+        #kegiatanTable_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #045a96;
+            border-color: #045a96;
+        }
+        #kegiatanTable_wrapper .dataTables_info {
+            color: #6b7280;
+            font-size: 12px;
+        }
+        #kegiatanTable_wrapper .dataTables_paginate {
+            font-size: 12px;
+        }
+        #kegiatanTable_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 30px;
+            border-bottom: 2px solid #e5e7eb;
+            background: linear-gradient(135deg, #067ac1 0%, #045a96 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal:hover .modal-header {
+            opacity: 0.98;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .close {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            transition: opacity 0.2s ease;
+        }
+
+        .close:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .loading-indicator {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .peserta-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .peserta-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            transition: background-color 0.2s ease;
+        }
+
+        .peserta-item:hover {
+            background: #f3f4f6;
+        }
+
+        .peserta-nama {
+            font-weight: 600;
+            color: #045a96;
+            font-size: 16px;
+            transition: color 0.2s ease;
+        }
+
+        .peserta-item:hover .peserta-nama {
+            color: #067ac1;
+        }
+
+        .peserta-nik {
+            color: #6b7280;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .peserta-empty {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .peserta-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+
+    <script>
+        (function() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!profileDropdown.contains(event.target) && event.target !== profileBtn) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+            }
+        })();
+
+    </script>
+    <script src="{{ url_for('static', filename='js/sweetalert-flash.js') }}"></script>
+    <script>
+        // Set CSRF token untuk JavaScript
+        window.csrfToken = '{{ csrf_token() }}';
+
+        // Fungsi untuk escape HTML (prevent XSS)
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // Fungsi untuk mendapatkan CSRF token
+        function getCSRFToken() {
+            if (window.csrfToken) {
+                return window.csrfToken;
+            }
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                return metaTag.getAttribute('content');
+            }
+            const csrfInput = document.querySelector('input[name="csrf_token"]');
+            if (csrfInput) {
+                return csrfInput.value;
+            }
+            return null;
+        }
+
+        // Fungsi helper untuk menghapus kegiatan dari button
+        function handleHapusKegiatanFromButton(button) {
+            const kegiatanId = parseInt(button.getAttribute('data-kegiatan-id'));
+            const kegiatanName = button.getAttribute('data-kegiatan-name');
+            const jumlahPeserta = parseInt(button.getAttribute('data-jumlah-peserta')) || 0;
+            handleHapusKegiatan(kegiatanId, kegiatanName, jumlahPeserta);
+        }
+
+        // Fungsi untuk menghapus kegiatan
+        function handleHapusKegiatan(kegiatanId, kegiatanName, jumlahPeserta) {
+            let warningMessage = '';
+            if (jumlahPeserta > 0) {
+                warningMessage = `<div style="background: #fee2e2; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #ef4444;"><strong style="color: #ef4444;">⚠️ PERINGATAN:</strong><br><small style="color: #991b1b;">Kegiatan ini memiliki <strong>${jumlahPeserta} peserta</strong>. Semua data biodata yang terkait dengan kegiatan ini akan terpengaruh. Nama kegiatan, waktu pelaksanaan, dan tempat pelaksanaan pada data biodata akan dihapus (data user lainnya tetap utuh).</small></div>`;
+            } else {
+                warningMessage = `<div style="background: #fef3c7; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #f59e0b;"><small style="color: #92400e;">Kegiatan ini belum memiliki peserta.</small></div>`;
+            }
+
+            Swal.fire({
+                title: 'Konfirmasi Hapus Kegiatan',
+                html: `Apakah Anda yakin ingin menghapus kegiatan <strong>"${escapeHtml(kegiatanName)}"</strong>?<br><br>${warningMessage}<small style="color: #dc2626;">Tindakan ini tidak dapat dibatalkan!</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Konfirmasi kedua jika ada peserta
+                    if (jumlahPeserta > 0) {
+                        Swal.fire({
+                            title: 'Konfirmasi Akhir',
+                            html: `Anda akan menghapus kegiatan <strong>"${escapeHtml(kegiatanName)}"</strong> yang memiliki <strong>${jumlahPeserta} peserta</strong>.<br><br><strong style="color: #ef4444;">Apakah Anda benar-benar yakin?</strong>`,
+                            icon: 'error',
+                            showCancelButton: true,
+                            confirmButtonColor: '#dc2626',
+                            cancelButtonColor: '#6b7280',
+                            confirmButtonText: 'Ya, Saya Yakin',
+                            cancelButtonText: 'Batal',
+                            reverseButtons: true,
+                            allowOutsideClick: false,
+                            allowEscapeKey: true
+                        }).then((finalResult) => {
+                            if (finalResult.isConfirmed) {
+                                submitHapusKegiatan(kegiatanId);
+                            }
+                        });
+                    } else {
+                        submitHapusKegiatan(kegiatanId);
+                    }
+                }
+            });
+        }
+
+        // Submit form untuk menghapus kegiatan
+        function submitHapusKegiatan(kegiatanId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/hapus-kegiatan/${kegiatanId}`;
+
+            // Tambahkan CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = getCSRFToken();
+            form.appendChild(csrfInput);
+
+            // Submit form
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Fungsi untuk konfirmasi toggle hide/show
+        function confirmToggleHide(event, button) {
+            event.preventDefault();
+            const namaKegiatan = button.getAttribute('data-kegiatan-name');
+            const isHidden = parseInt(button.getAttribute('data-is-hidden')) || 0;
+            const action = isHidden == 1 ? 'menampilkan' : 'menyembunyikan';
+            const message = isHidden == 1 
+                ? `Apakah Anda yakin ingin menampilkan kegiatan "${escapeHtml(namaKegiatan)}"? Kegiatan ini akan muncul kembali di halaman tambah data peserta.`
+                : `Apakah Anda yakin ingin menyembunyikan kegiatan "${escapeHtml(namaKegiatan)}"? Kegiatan ini tidak akan muncul di halaman tambah data peserta.`;
+            
+            Swal.fire({
+                title: 'Konfirmasi',
+                html: message,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: isHidden == 1 ? '#10b981' : '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form setelah konfirmasi
+                    button.closest('form').submit();
+                }
+            });
+            
+            return false;
+        }
+    </script>
+    <script>
+        // Inisialisasi DataTables
+        $(document).ready(function() {
+            const table = $('#kegiatanTable').DataTable({
+                'pageLength': 10,
+                'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, 'Semua']],
+                'order': [[1, 'desc']], // Urut berdasarkan kolom ID (hidden) descending - terbaru di atas
+                'language': {
+                    'url': '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
+                },
+                'columnDefs': [
+                    {
+                        'targets': 0, // Kolom No
+                        'orderable': false, // Nonaktifkan sorting untuk kolom No
+                        'searchable': false
+                    },
+                    {
+                        'targets': 1, // Kolom ID (hidden)
+                        'visible': false, // Sembunyikan kolom ID
+                        'searchable': false
+                    },
+                    {
+                        'targets': 4, // Kolom Aksi
+                        'orderable': false, // Nonaktifkan sorting untuk kolom Aksi
+                        'searchable': false
+                    }
+                ],
+                'drawCallback': function(settings) {
+                    // Update nomor urut setelah pagination
+                    const api = this.api();
+                    const pageInfo = api.page.info();
+                    api.column(0, {page: 'current'}).nodes().each(function(cell, i) {
+                        cell.innerHTML = pageInfo.start + i + 1;
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

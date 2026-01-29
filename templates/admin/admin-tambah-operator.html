@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGTK SULTENG - Tambah Operator</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='LOGO.png') }}" alt="BGTK Sulteng" class="sidebar-logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <span class="sidebar-icon icon-dashboard" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 3h8v8H3V3zm10 0h8v5h-8V3zm0 7h8v11h-8V10zM3 13h8v8H3v-8z"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Dashboard</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin_kegiatan') }}" class="sidebar-link {% if 'kegiatan' in request.path and 'edit-kegiatan' not in request.path and 'detail' not in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-kegiatan" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
+                            <path d="M9 3V2h6v1m-5 5h4m-4 4h4m-4 4h4"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Kegiatan</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin_rekap_filter') }}" class="sidebar-link {% if 'rekap-filter' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-rekap" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10Z"/>
+                            <circle cx="12" cy="11" r="2.2"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Rekap Filter</span>
+                    </div>
+                </a>
+                {% if user_role != 'operator' %}
+                <a href="{{ url_for('admin_users') }}" class="sidebar-link {% if 'users' in request.path or 'edit-operator' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-users" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+                            <circle cx="10" cy="8" r="4"/>
+                            <path d="M21 21v-2a3 3 0 0 0-2-2.82m-3-11.65a3 3 0 0 1 0 5.94"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Operator</span>
+                    </div>
+                </a>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="sidebar-link sidebar-link--logout">
+                    <span class="sidebar-icon icon-logout" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 17l5-5-5-5"/>
+                            <path d="M20 12H9"/>
+                            <path d="M13 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Logout</span>
+                    </div>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="topbar">
+                <div class="topbar-title">Selamat Datang, {{ user_display_name or 'Admin' }}!</div>
+                <div class="profile-menu">
+                    <button type="button" class="profile-btn" id="profileBtn">Profil</button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="profile-name">{{ user_display_name or 'Admin' }}</div>
+                        <a href="{{ url_for('change_password') }}">Ubah Password</a>
+                    </div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="header">
+                    <div>
+                        <h1>Tambah Operator</h1>
+                        <p class="header-subtitle">Tambahkan operator baru dengan mengisi form di bawah ini.</p>
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages" style="display: none;">
+                            {% for category, message in messages %}
+                                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="form-card">
+                    <form method="POST" class="kegiatan-form" id="tambahOperatorForm" autocomplete="off">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="form-group">
+                            <label for="nama">Nama/Tim Kerja <span class="required">*</span></label>
+                            <input type="text"
+                                   id="nama"
+                                   name="nama"
+                                   class="form-input"
+                                   placeholder="Masukkan nama operator"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="username">Username <span class="required">*</span></label>
+                            <input type="text"
+                                   id="username"
+                                   name="username"
+                                   class="form-input"
+                                   placeholder="Masukkan username"
+                                   required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password <span class="required">*</span></label>
+                            <div class="password-wrapper">
+                                <input type="password"
+                                   id="password"
+                                   name="password"
+                                   class="form-input"
+                                   placeholder="Masukkan password"
+                                   required>
+                                   <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                                    <svg class="eye-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Simpan Operator</button>
+                        </div>
+                    </form>
+                </div>
+
+                {% if operators_list %}
+                <div class="kegiatan-list-card">
+                    <h2>Daftar Operator yang Telah Ditambahkan</h2>
+                    <div class="kegiatan-table-wrapper">
+                        <table class="kegiatan-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Operator</th>
+                                    <th>Username</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for operator in operators_list %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><strong>{{ operator.nama or operator.username }}</strong></td>
+                                    <td>{{ operator.username }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!profileDropdown.contains(event.target) && event.target !== profileBtn) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+            }
+
+        })();
+    </script>
+
+    <script src="{{ url_for('static', filename='js/sweetalert-flash.js') }}"></script>
+    <script>
+        // Konfirmasi sebelum submit form tambah operator
+        (function() {
+            const form = document.getElementById('tambahOperatorForm');
+            let isSubmitting = false;
+
+            if (form) {
+                const submitHandler = function(e) {
+                    // Prevent multiple submissions
+                    if (isSubmitting) {
+                        e.preventDefault();
+                        return false;
+                    }
+
+                    // Prevent default submission untuk validasi
+                    e.preventDefault();
+                    isSubmitting = true;
+
+                    // Ambil data dari form
+                    const nama = document.getElementById('nama')?.value || '';
+                    const username = document.getElementById('username')?.value || '';
+                    const password = document.getElementById('password')?.value || '';
+
+                    // Validasi dasar
+                    if (!nama || !username || !password) {
+                        isSubmitting = false;
+                        Swal.fire({
+                            title: 'Data Belum Lengkap',
+                            text: 'Mohon lengkapi semua field yang wajib diisi.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#067ac1'
+                        });
+                        return;
+                    }
+
+                    // Build HTML message untuk SweetAlert dengan format rapi
+                    let confirmHtml = 'Apakah Anda yakin ingin menambahkan operator baru ini?<br><br>';
+                    confirmHtml += '<div style="text-align: left; margin: 0 auto; display: inline-block;">';
+
+                    if (nama) {
+                        confirmHtml += `<div style="margin-bottom: 8px;"><span style="display: inline-block; width: 100px; font-weight: bold;">Nama</span><span style="margin-right: 8px;"> :</span>${escapeHtml(nama)}</div>`;
+                    }
+                    if (username) {
+                        confirmHtml += `<div style="margin-bottom: 8px;"><span style="display: inline-block; width: 100px; font-weight: bold;">Username</span><span style="margin-right: 8px;"> :</span>${escapeHtml(username)}</div>`;
+                    }
+
+
+                    confirmHtml += '</div>';
+                    confirmHtml += '<br><span style="color: #059669;"><strong>Pastikan semua data sudah benar.</strong></span>';
+
+                    Swal.fire({
+                        title: 'Tambah Operator?',
+                        html: confirmHtml,
+                        showCancelButton: true,
+                        confirmButtonColor: '#059669',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Ya, Tambahkan',
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // User klik Ya, Tambahkan - lanjutkan submit
+                            form.removeEventListener('submit', submitHandler);
+                            form.submit();
+                        } else {
+                            // User klik Batal - batalkan submit dan reset isSubmitting
+                            isSubmitting = false;
+                        }
+                    });
+                };
+
+                form.addEventListener('submit', submitHandler);
+            }
+
+            // Fungsi untuk escape HTML (prevent XSS)
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+        })();
+    </script>
+    <script>
+        // Set CSRF token untuk form
+        window.csrfToken = '{{ csrf_token() }}';
+    </script>
+    <script>
+    // Password toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('passwordToggle');
+
+            if (passwordInput && passwordToggle) {
+                const eyeIcon = passwordToggle.querySelector('.eye-icon');
+
+                // Eye icon paths for show/hide
+                const eyeOpenPath = 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z';
+                const eyeClosedPath = 'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22';
+
+                passwordToggle.addEventListener('click', function() {
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+
+                    // Update icon
+                    const path = eyeIcon.querySelector('path');
+                    if (isPassword) {
+                        // Show closed eye
+                        path.setAttribute('d', eyeClosedPath);
+                        path.setAttribute('stroke-linecap', 'round');
+                        path.setAttribute('stroke-linejoin', 'round');
+                    } else {
+                        // Show open eye
+                        path.setAttribute('d', eyeOpenPath);
+                        path.setAttribute('stroke-linecap', 'round');
+                        path.setAttribute('stroke-linejoin', 'round');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+

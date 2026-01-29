@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGTK SULTENG - Welcome</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages" style="display: none;">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="split-container">
+        <!-- Curved Divider SVG -->
+        <svg class="curve-divider" viewBox="0 0 120 100" preserveAspectRatio="none">
+            <path d="M 0 0 L 120 0 Q 60 25 120 50 Q 60 75 120 100 L 0 100 Z" fill="white"/>
+        </svg>
+
+        <!-- Left Panel - Large with Background Pattern -->
+        <div class="left-panel">
+            <div class="left-panel-overlay"></div>
+            <div class="left-panel-pattern"></div>
+            <div class="left-panel-content" style="max-width: 100%; width: 100%;">
+                <div class="left-panel-info" style="align-items: stretch; width: 100%;">
+                    <!-- Header Section - Centered -->
+                    <div class="info-header">
+                        <div class="badge-container">
+                            <img src="{{ url_for('static', filename='TUT.png') }}" alt="Tut Wuri Handayani" class="info-badge logo-badge">
+                            <img src="{{ url_for('static', filename='Pendidikan Bermutu untuk Semua.png') }}" alt="Pendidikan Bermutu untuk Semua" class="info-badge logo-badge">
+                            <img src="{{ url_for('static', filename='Ramah.png') }}" alt="Ramah" class="info-badge logo-badge">
+                        </div>
+                        <h2 class="info-title">Balai Guru dan Tenaga Kependidikan Provinsi Sulawesi Tengah</h2><br>
+                        <p class="info-subtitle">Direktorat Jenderal Guru, Tenaga Kependidikan dan Pendidikan Guru</p>
+                        <p class="info-subtitle">Kementerian Pendidikan Dasar dan Menengah</p>
+                    </div>
+
+                    <!-- Contact and Hours - Side by Side --><br><br><br><br>
+                    <div class="info-row" style="max-width: 100%; width: 100%; margin: 0; padding: 0; gap: 1.2rem;">
+                        <div class="info-section" style="width: 100%; flex: 1;">
+                            <h3 class="info-heading">Hubungi Kami:</h3>
+                            <p class="info-text">
+                                Jl. Tolambu No. 12, Kamonji, Kec. Palu Barat,<br>
+                                Kota Palu, Sulawesi Tengah 94223
+                            </p>
+                            <p class="info-text">
+                                <strong>Telp:</strong> 082156583969
+                            </p>
+                            <p class="info-text">
+                                <strong>Email:</strong> bgtksulteng@kemendikdasmen.go.id
+                            </p>
+                            <div style="margin-top: 20px;">
+                                <strong style="display: block; margin-bottom: 10px;">Media Sosial:</strong>
+                                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                    <a href="https://www.instagram.com/bgtksulteng" target="_blank" rel="noopener noreferrer"
+                                       style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                                        <i class="fab fa-instagram" style="font-size: 18px;"></i>
+                                        <span>Instagram</span>
+                                    </a>
+                                    <a href="https://bgtksulteng.kemendikdasmen.go.id" target="_blank" rel="noopener noreferrer"
+                                       style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: #067ac1; color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                       onmouseover="this.style.background='#0d8dd4'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                                       onmouseout="this.style.background='#067ac1'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                                        <i class="fas fa-globe" style="font-size: 18px;"></i>
+                                        <span>Website</span>
+                                    </a>
+                                    <a href="https://www.youtube.com/@bgtksulteng" target="_blank" rel="noopener noreferrer"
+                                       style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: #FF0000; color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                       onmouseover="this.style.background='#cc0000'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                                       onmouseout="this.style.background='#FF0000'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';">
+                                        <i class="fab fa-youtube" style="font-size: 18px;"></i>
+                                        <span>YouTube</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3 class="info-heading">Jam Layanan:</h3>
+                            <p class="info-text">
+                                <strong>Senin-Kamis:</strong> 09:00-15:00 WITA
+                            </p>
+                            <p class="info-text">
+                                <strong>Jumat:</strong> 09:00-15:30 WITA
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Clean White -->
+        <div class="right-panel">
+            <div class="right-panel-content">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='Logo_BGTK.png') }}" alt="BGTK SULTENG" class="logo-image">
+                </div>
+                <h1 class="welcome-title">WELCOME TO<br>SIREKE BGTK SULTENG</h1>
+                <p class="subtitle">Sistem Informasi Registrasi Kegiatan</p>
+
+                <div class="button-group">
+                    <a href="{{ url_for('login') }}?type=admin" class="login-button">
+                        Admin / Operator
+                    </a>
+
+                    <a href="{{ url_for('tambah_data') }}" class="login-button">
+                        Registrasi Peserta / Narasumber / Panitia
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/sweetalert-flash.js') }}"></script>
+</body>
+</html>

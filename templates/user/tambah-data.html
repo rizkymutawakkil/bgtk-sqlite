@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGTK SULTENG - Tambah Biodata Kegiatan</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tambah-data.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="logo-container">
+                    <div class="logo">
+                        <img src="{{ url_for('static', filename='Logo_BGTK.png') }}" alt="Logo TUT">
+                    </div>
+                </div>
+                <div class="institution-info">
+                    <h2>KEMENTERIAN PENDIDIKAN DASAR DAN MENENGAH</h2>
+                    <h3>BALAI GURU DAN TENAGA KEPENDIDIKAN PROVINSI SULAWESI TENGAH</h3>
+                    <p>Jl. Tolambu No.12 Kamonji, Kec. Palu Barat, Kota Palu, Sulawesi Tengah 94223</p>
+                    <p>bgtksulteng.kemendikdasmen.go.id</p>
+                </div>
+            </div>
+            <hr class="divider">
+            <h1 class="form-title">TAMBAH BIODATA KEGIATAN BGTK PROVINSI SULAWESI TENGAH TAHUN {{ current_year|default('2025') }}</h1>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages" style="display: none;">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- NIK Lookup Section -->
+        <div class="form-section" style="margin-bottom: 20px; background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; margin-bottom: 15px; color: #067ac1; font-size: 18px;">Cari Data Terakhir berdasarkan NIK</h3>
+            <div class="form-group">
+                <label for="nik_lookup">Masukkan NIK untuk Mengisi Form Otomatis <span style="font-size: 12px; color: #6c757d;">(Opsional)</span></label>
+                <input type="text" id="nik_lookup" class="form-input" placeholder="Masukkan NIK (16 digit) untuk mengambil data terakhir" inputmode="numeric" pattern="^\d{16}$" title="NIK harus tepat 16 digit angka" maxlength="16" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16);">
+                <div id="nik-lookup-feedback" class="nik-feedback" style="display: none; margin-top: 5px; font-size: 14px;"></div>
+                <small style="display: block; margin-top: 5px; color: #6c757d; font-size: 12px;">
+                    💡 Tip: Masukkan NIK yang pernah digunakan sebelumnya, form akan terisi otomatis dengan data terakhir
+                </small>
+            </div>
+        </div>
+
+        <!-- Form Section -->
+
+
+        <div class="form-section">
+            <form method="POST" action="{{ url_for('tambah_data') }}" class="biodata-form" enctype="multipart/form-data" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                <div class="form-group">
+                    <label for="nama_kegiatan">Nama Kegiatan <span class="required">*</span></label>
+                    <select id="nama_kegiatan" name="nama_kegiatan" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.nama_kegiatan %}selected{% endif %}>-Select-</option>
+                        {% if kegiatan_list and kegiatan_list|length > 0 %}
+                            {% for kegiatan in kegiatan_list %}
+                                <option value="{{ kegiatan.nama_kegiatan }}" {% if biodata and biodata.nama_kegiatan == kegiatan.nama_kegiatan %}selected{% endif %}>{{ kegiatan.nama_kegiatan }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="" disabled selected>Tidak ada kegiatan tersedia - Silakan hubungi admin</option>
+                        {% endif %}
+                    </select>
+                    {% if not kegiatan_list or kegiatan_list|length == 0 %}
+                        <small style="color: #dc3545; display: block; margin-top: 5px;">
+                            ⚠️ Belum ada kegiatan yang dibuat oleh admin. Silakan hubungi administrator untuk menambahkan kegiatan.
+                        </small>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="waktu_pelaksanaan">Waktu Pelaksanaan<span class="required">*</span></label>
+                    <input type="text" id="waktu_pelaksanaan" name="waktu_pelaksanaan" class="form-input" placeholder="Pilih nama kegiatan terlebih dahulu" value="{{ biodata.waktu_pelaksanaan if biodata else '' }}" readonly required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tempat_pelaksanaan">Tempat Pelaksanaan<span class="required">*</span></label>
+                    <input type="text" id="tempat_pelaksanaan" name="tempat_pelaksanaan" class="form-input" placeholder="Pilih nama kegiatan terlebih dahulu" value="{{ biodata.tempat_pelaksanaan if biodata else '' }}" readonly required>
+                </div>
+
+                <div class="form-group">
+                    <label for="peran">Peran Dalam Kegiatan <span class="required">*</span></label>
+                    <select id="peran" name="peran" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.peran %}selected{% endif %}>-Select-</option>
+                        <option value="Narasumber" {% if biodata and biodata.peran == 'Narasumber' %}selected{% endif %}>Narasumber</option>
+                        <option value="Fasilitator/Narasumber" {% if biodata and biodata.peran == 'Fasilitator/Narasumber' %}selected{% endif %}>Fasilitator/Narasumber</option>
+                        <option value="Pengajar PM" {% if biodata and biodata.peran == 'Pengajar PM' %}selected{% endif %}>Pengajar PM</option>
+                        <option value="Penceramah" {% if biodata and biodata.peran == 'Penceramah' %}selected{% endif %}>Penceramah</option>
+                        <option value="Panitia BGTK" {% if biodata and biodata.peran == 'Panitia BGTK' %}selected{% endif %}>Panitia BGTK</option>
+                        <option value="Panitia Daerah" {% if biodata and biodata.peran == 'Panitia Daerah' %}selected{% endif %}>Panitia Daerah</option>
+                        <option value="Panitia Sekolah" {% if biodata and biodata.peran == 'Panitia Sekolah' %}selected{% endif %}>Panitia Sekolah</option>
+                        <option value="Peserta Kegiatan" {% if biodata and biodata.peran == 'Peserta Kegiatan' %}selected{% endif %}>Peserta Kegiatan</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="nama_lengkap">Nama Lengkap <span class="required">*</span></label>
+                    <input type="text" id="nama_lengkap" name="nama_lengkap" class="form-input" placeholder="Masukkan nama lengkap" pattern="[^0-9]+" title="Tidak boleh mengandung angka" value="{{ biodata.nama_lengkap if biodata else '' }}" required>
+                </div>
+
+                 <div class="form-group">
+                    <label for="NIK">NIK<span class="required">*</span></label>
+                    <input type="text" id="NIK" name="NIK" class="form-input" placeholder="Masukkan NIK (16 digit)" inputmode="numeric" pattern="^\d{16}$" title="NIK harus tepat 16 digit angka" maxlength="16" value="{{ biodata.nik if biodata else '' }}" required>
+                    <div id="nik-feedback" class="nik-feedback" style="display: none; margin-top: 5px; font-size: 14px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="nip_nippk">NIP/NIPPK <span class="required">*</span></label>
+                    <small style="display: block; color: #666; font-size: 12px; margin-bottom: 5px;">Jika Non ASN, isi dengan 0 sebanyak 18 digit (000000000000000000)</small>
+                    <input type="text" id="nip_nippk" name="nip/nippk" class="form-input" placeholder="Masukkan NIP/NIPPK (18 digit)" inputmode="numeric" pattern="^\d{18}$" title="NIP/NIPPK harus tepat 18 digit angka. Jika Non ASN, isi dengan 0 sebanyak 18 digit (000000000000000000)" maxlength="18" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 18);" value="{{ biodata.nip_nippk if biodata else '' }}" required>
+                    <div id="nip-feedback" class="nik-feedback" style="display: none; margin-top: 5px; font-size: 14px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tempat_lahir">Tempat Lahir<span class="required">*</span></label>
+                    <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-input" placeholder="Masukkan Tempat Lahir" pattern="[^0-9]+" title="Tidak boleh mengandung angka" value="{{ biodata.tempat_lahir if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tanggal_lahir">Tanggal Lahir<span class="required">*</span></label>
+                     <input type="date" id="tanggal_lahir" name="tanggal_lahir" class="form-input" value="{{ biodata.tanggal_lahir if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="jenis_kelamin">Jenis Kelamin <span class="required">*</span></label>
+                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.jenis_kelamin %}selected{% endif %}>-Select-</option>
+                        <option value="Laki-laki" {% if biodata and biodata.jenis_kelamin == 'Laki-laki' %}selected{% endif %}>Laki-laki</option>
+                        <option value="Perempuan" {% if biodata and biodata.jenis_kelamin == 'Perempuan' %}selected{% endif %}>Perempuan</option>
+                    </select>
+                    <input type="hidden" id="jenis_kelamin_hidden" name="jenis_kelamin" value="{{ biodata.jenis_kelamin if biodata and biodata.jenis_kelamin else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="agama">Agama <span class="required">*</span></label>
+                    <select id="agama" name="agama" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.agama %}selected{% endif %}>-Select-</option>
+                        <option value="Islam" {% if biodata and biodata.agama == 'Islam' %}selected{% endif %}>Islam</option>
+                        <option value="Kristen" {% if biodata and biodata.agama == 'Kristen' %}selected{% endif %}>Kristen</option>
+                        <option value="Katolik" {% if biodata and biodata.agama == 'Katolik' %}selected{% endif %}>Katolik</option>
+                        <option value="Hindu" {% if biodata and biodata.agama == 'Hindu' %}selected{% endif %}>Hindu</option>
+                        <option value="Budha" {% if biodata and biodata.agama == 'Budha' %}selected{% endif %}>Budha</option>
+                        <option value="Konghucu" {% if biodata and biodata.agama == 'Konghucu' %}selected{% endif %}>Konghucu</option>
+                    </select>
+                    <input type="hidden" id="agama_hidden" name="agama" value="{{ biodata.agama if biodata and biodata.agama else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="pendidikan_terakhir">Pendidikan Terakhir <span class="required">*</span></label>
+                    <select id="pendidikan_terakhir" name="pendidikan_terakhir" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.pendidikan_terakhir %}selected{% endif %}>-Select-</option>
+                        <option value="SMA/SMK" {% if biodata and biodata.pendidikan_terakhir == 'SMA/SMK' %}selected{% endif %}>SMA/SMK</option>
+                        <option value="D1/D2" {% if biodata and biodata.pendidikan_terakhir == 'D1/D2' %}selected{% endif %}>D1/D2</option>
+                        <option value="D3" {% if biodata and biodata.pendidikan_terakhir == 'D3' %}selected{% endif %}>D3</option>
+                        <option value="S1/D4" {% if biodata and biodata.pendidikan_terakhir == 'S1/D4' %}selected{% endif %}>S1/D4</option>
+                        <option value="S2" {% if biodata and biodata.pendidikan_terakhir == 'S2' %}selected{% endif %}>S2</option>
+                        <option value="S3" {% if biodata and biodata.pendidikan_terakhir == 'S3' %}selected{% endif %}>S3</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="jurusan">Jurusan<span class="required">*</span></label>
+                    <input type="text" id="jurusan" name="jurusan" class="form-input" placeholder="Masukkan Jurusan" value="{{ biodata.jurusan if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="alamat_domisili">Alamat Domisili<span class="required">*</span></label>
+                    <input type="text" id="alamat_domisili" name="alamat_domisili" class="form-input" placeholder="Masukkan Alamat Domisili" value="{{ biodata.alamat_domisili if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="alamat_email">Alamat Email<span class="required">*</span></label>
+                    <input type="email" id="alamat_email" name="alamat_email" class="form-input" placeholder="Masukkan Alamat Email" value="{{ biodata.alamat_email if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="no_hp">Nomor HP/TLP/WA<span class="required">*</span></label>
+                    <input type="tel" id="no_hp" name="nohp" class="form-input" placeholder="Masukkan Nomor HP/TLP/WA" inputmode="numeric" pattern="[0-9]+" title="Masukkan angka saja" value="{{ biodata.no_hp if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="npwp">NPWP<span class="required">*</span></label>
+                    <input type="text" id="npwp" name="npwp" class="form-input" placeholder="Masukkan NPWP" value="{{ biodata.npwp if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="status_asn">Status ASN <span class="required">*</span></label>
+                    <select id="status_asn" name="status_asn" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.status_asn %}selected{% endif %}>-Select-</option>
+                        <option value="PNS" {% if biodata and biodata.status_asn == 'PNS' %}selected{% endif %}>PNS</option>
+                        <option value="PPPK" {% if biodata and biodata.status_asn == 'PPPK' %}selected{% endif %}>PPPK</option>
+                        <option value="Non ASN" {% if biodata and biodata.status_asn == 'Non ASN' %}selected{% endif %}>Non ASN</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="pangkat_golongan">Pangkat/Golongan <span class="required">*</span></label>
+                    <select id="pangkat_golongan" name="Pangkat/Golongan" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.pangkat_golongan %}selected{% endif %}>-Select-</option>
+                        <option value="Pengatur Muda, II/a" {% if biodata and biodata.pangkat_golongan == 'Pengatur Muda, II/a' %}selected{% endif %}>Pengatur Muda, II/a</option>
+                        <option value="Pengatur Muda Tkt.I, II/b" {% if biodata and biodata.pangkat_golongan == 'Pengatur Muda Tkt.I, II/b' %}selected{% endif %}>Pengatur Muda Tkt.I, II/b</option>
+                        <option value="Pengatur, II/c" {% if biodata and biodata.pangkat_golongan == 'Pengatur, II/c' %}selected{% endif %}>Pengatur, II/c</option>
+                        <option value="Pengatur Tkt.I, II/d" {% if biodata and biodata.pangkat_golongan == 'Pengatur Tkt.I, II/d' %}selected{% endif %}>Pengatur Tkt.I, II/d</option>
+                        <option value="Penata Muda, III/a" {% if biodata and biodata.pangkat_golongan == 'Penata Muda, III/a' %}selected{% endif %}>Penata Muda, III/a</option>
+                        <option value="Penata Muda Tkt.I, III/b" {% if biodata and biodata.pangkat_golongan == 'Penata Muda Tkt.I, III/b' %}selected{% endif %}>Penata Muda Tkt.I, III/b</option>
+                        <option value="Penata, III/c" {% if biodata and biodata.pangkat_golongan == 'Penata, III/c' %}selected{% endif %}>Penata, III/c</option>
+                        <option value="Penata Tkt.I, III/d" {% if biodata and biodata.pangkat_golongan == 'Penata Tkt.I, III/d' %}selected{% endif %}>Penata Tkt.I, III/d</option>
+                        <option value="Pembina, IV/a" {% if biodata and biodata.pangkat_golongan == 'Pembina, IV/a' %}selected{% endif %}>Pembina, IV/a</option>
+                        <option value="Pembina Tkt.I, IV/b" {% if biodata and biodata.pangkat_golongan == 'Pembina Tkt.I, IV/b' %}selected{% endif %}>Pembina Tkt.I, IV/b</option>
+                        <option value="Pembina Utama Muda, IV/c" {% if biodata and biodata.pangkat_golongan == 'Pembina Utama Muda, IV/c' %}selected{% endif %}>Pembina Utama Muda, IV/c</option>
+                        <option value="Pembina Utama Madya, IV/d" {% if biodata and biodata.pangkat_golongan == 'Pembina Utama Madya, IV/d' %}selected{% endif %}>Pembina Utama Madya, IV/d</option>
+                        <option value="PPPK Gol. IX" {% if biodata and biodata.pangkat_golongan == 'PPPK Gol. IX' %}selected{% endif %}>PPPK Gol. IX</option>
+                        <option value="PPPK Gol. X" {% if biodata and biodata.pangkat_golongan == 'PPPK Gol. X' %}selected{% endif %}>PPPK Gol. X</option>
+                        <option value="PPPK Gol. VII" {% if biodata and biodata.pangkat_golongan == 'PPPK Gol. VII' %}selected{% endif %}>PPPK Gol. VII</option>
+                        <option value="PPPK Gol. VI" {% if biodata and biodata.pangkat_golongan == 'PPPK Gol. VI' %}selected{% endif %}>PPPK Gol. VI</option>
+                        <option value="PPPK Gol. V" {% if biodata and biodata.pangkat_golongan == 'PPPK Gol. V' %}selected{% endif %}>PPPK Gol. V</option>
+                        <option value="Non ASN" {% if biodata and biodata.pangkat_golongan == 'Non ASN' %}selected{% endif %}>Non ASN</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="jabatan">Jabatan<span class="required">*</span></label>
+                    <input type="text" id="jabatan" name="jabatan" class="form-input" placeholder="Masukkan Jabatan" value="{{ biodata.jabatan if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="instansi">Instansi<span class="required">*</span></label>
+                    <input type="text" id="instansi" name="instansi" class="form-input" placeholder="Masukkan Instansi" value="{{ biodata.instansi if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="alamat_instansi">Alamat Instansi<span class="required">*</span></label>
+                    <input type="text" id="alamat_instansi" name="alamat_instansi" class="form-input" placeholder="Masukkan Alamat Instansi" value="{{ biodata.alamat_instansi if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="kabupaten_kota">Kabupaten/Kota<span class="required">*</span></label>
+                    <select id="kabupaten_kota" name="kabupaten/kota" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.kabupaten_kota %}selected{% endif %}>-Select-</option>
+                        <option value="BANGGAI" {% if biodata and biodata.kabupaten_kota == 'BANGGAI' %}selected{% endif %}>BANGGAI</option>
+                        <option value="BANGGAI KEPULAUAN" {% if biodata and biodata.kabupaten_kota == 'BANGGAI KEPULAUAN' %}selected{% endif %}>BANGGAI KEPULAUAN</option>
+                        <option value="BANGGAI LAUT" {% if biodata and biodata.kabupaten_kota == 'BANGGAI LAUT' %}selected{% endif %}>BANGGAI LAUT</option>
+                        <option value="BUOL" {% if biodata and biodata.kabupaten_kota == 'BUOL' %}selected{% endif %}>BUOL</option>
+                        <option value="DONGGALA" {% if biodata and biodata.kabupaten_kota == 'DONGGALA' %}selected{% endif %}>DONGGALA</option>
+                        <option value="MOROWALI" {% if biodata and biodata.kabupaten_kota == 'MOROWALI' %}selected{% endif %}>MOROWALI</option>
+                        <option value="MOROWALI UTARA" {% if biodata and biodata.kabupaten_kota == 'MOROWALI UTARA' %}selected{% endif %}>MOROWALI UTARA</option>
+                        <option value="PALU" {% if biodata and biodata.kabupaten_kota == 'PALU' %}selected{% endif %}>PALU</option>
+                        <option value="PARIGI MOUTONG" {% if biodata and biodata.kabupaten_kota == 'PARIGI MOUTONG' %}selected{% endif %}>PARIGI MOUTONG</option>
+                        <option value="POSO" {% if biodata and biodata.kabupaten_kota == 'POSO' %}selected{% endif %}>POSO</option>
+                        <option value="SIGI" {% if biodata and biodata.kabupaten_kota == 'SIGI' %}selected{% endif %}>SIGI</option>
+                        <option value="TOJO UNA-UNA" {% if biodata and biodata.kabupaten_kota == 'TOJO UNA-UNA' %}selected{% endif %}>TOJO UNA-UNA</option>
+                        <option value="TOLI-TOLI" {% if biodata and biodata.kabupaten_kota == 'TOLI-TOLI' %}selected{% endif %}>TOLI-TOLI</option>
+                        <option value="LAINNYA" {% if biodata and biodata.kabupaten_kota == 'LAINNYA' %}selected{% endif %}>LAINNYA</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="kabko-lainnya-group" {% if biodata and biodata.kabupaten_kota == 'LAINNYA' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                    <label for="kabko_lainnya">Nama Kabupaten/Kota diluar Sulawesi Tengah<span class="required">*</span></label>
+                    <input type="text" id="kabko_lainnya" name="kabko_lainnya" class="form-input" placeholder="Masukkan Nama Kabupaten/Kota Diluar Sulawesi Tengah" value="{{ biodata.kabko_lainnya if biodata else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="nama_bank">Nama Bank<span class="required">*</span></label>
+                    <select id="nama_bank" name="nama_bank" class="form-select" required>
+                        <option value="" disabled {% if not biodata or not biodata.nama_bank %}selected{% endif %}>-Select-</option>
+                        <option value="BANK BSI" {% if biodata and biodata.nama_bank == 'BANK BSI' %}selected{% endif %}>BANK BSI</option>
+                        <option value="BANK MANDIRI" {% if biodata and biodata.nama_bank == 'BANK MANDIRI' %}selected{% endif %}>BANK MANDIRI</option>
+                        <option value="BANK BNI" {% if biodata and biodata.nama_bank == 'BANK BNI' %}selected{% endif %}>BANK BNI</option>
+                        <option value="BANK BRI" {% if biodata and biodata.nama_bank == 'BANK BRI' %}selected{% endif %}>BANK BRI</option>
+                        <option value="BANK SULTENG" {% if biodata and biodata.nama_bank == 'BANK SULTENG' %}selected{% endif %}>BANK SULTENG</option>
+                        <option value="BANK BCA" {% if biodata and biodata.nama_bank == 'BANK BCA' %}selected{% endif %}>BANK BCA</option>
+                        <option value="BANK MUAMALAT" {% if biodata and biodata.nama_bank == 'BANK MUAMALAT' %}selected{% endif %}>BANK MUAMALAT</option>
+                        <option value="BANK LAINNYA" {% if biodata and biodata.nama_bank == 'BANK LAINNYA' %}selected{% endif %}>BANK LAINNYA</option>
+                    </select>
+                </div>
+
+                 <div class="form-group" id="bank-lainnya-group" {% if biodata and biodata.nama_bank == 'BANK LAINNYA' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                     <label for="nama_bank_lainnya">Nama Bank Lainnya<span class="required">*</span></label>
+                     <input type="text" id="nama_bank_lainnya" name="nama_bank_lainnya" class="form-input" placeholder="Masukkan Nama Bank Lainnya" value="{{ biodata.nama_bank_lainnya if biodata else '' }}">
+                 </div>
+
+                <div class="form-group">
+                    <label for="no_rekening">No. Rekening<span class="required">*</span></label>
+                    <input type="text" id="no_rekening" name="no_rekening" class="form-input" placeholder="Masukkan No. Rekening (isi 0 jika tidak ada anggaran)" inputmode="numeric" pattern="[0-9]+" title="Masukkan angka saja. Isi 0 jika kegiatan tidak ada anggaran" value="{{ biodata.no_rekening if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nama_pemilik_rekening">Nama Pemilik Rekening<span class="required">*</span></label>
+                    <input type="text" id="nama_pemilik_rekening" name="nama_pemilik_rekening" class="form-input" placeholder="Masukkan Nama Pemilik Rekening" pattern="[^0-9]+" title="Tidak boleh mengandung angka" value="{{ biodata.nama_pemilik_rekening if biodata else '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="buku_tabungan">Foto Buku Tabungan atau Tangkapan Layar Rekening Bank dari Aplikasi Mobile Banking<span class="required">*</span></label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="buku_tabungan" name="buku_tabungan" class="file-upload-input" accept="image/*" {% if not biodata or not biodata.buku_tabungan_path %}required{% endif %}>
+                         <input type="hidden" id="existing_buku_tabungan_path" name="existing_buku_tabungan_path" value="">
+                        <label for="buku_tabungan" class="file-upload-label">
+                            <span id="buku_tabungan_text">Choose File</span>
+                            <div class="file-upload-icons">
+                                <span class="icon upload">&#8682;</span>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="buku_tabungan_preview" class="image-preview" style="display: none;">
+                        <span class="image-preview-label">Preview: Klik gambar untuk memperbesar</span>
+                        <img id="buku_tabungan_img" src="" alt="Preview Foto Buku Tabungan">
+                    </div>
+                    {% if biodata and biodata.buku_tabungan_path %}
+                    <div class="image-preview existing-image" style="margin-top: 10px;">
+                        <p style="font-size: 12px; color: #666; margin-bottom: 5px;">Foto saat ini:</p>
+                        <span class="image-preview-label" style="display: block; margin-bottom: 8px;">Klik gambar untuk memperbesar</span>
+                        {% if 'uploads/' in biodata.buku_tabungan_path %}
+                            {% set img_path = biodata.buku_tabungan_path %}
+                        {% else %}
+                            {% set img_path = 'uploads/' + biodata.buku_tabungan_path %}
+                        {% endif %}
+                        <img src="{{ url_for('static', filename=img_path) }}" alt="Foto Buku Tabungan" id="existing_buku_tabungan_img" onerror="this.style.display='none'; this.parentElement.querySelector('p').textContent='Foto tidak ditemukan';">
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group signature-group">
+                    <label for="ttd_canvas">Tanda Tangan<span class="required">*</span></label>
+                    {% if biodata and biodata.tanda_tangan %}
+                    <p style="font-size: 12px; color: #000000; margin-bottom: 10px;">Tanda tangan sudah ada. Kosongkan canvas jika ingin menggunakan tanda tangan yang sudah ada, atau buat tanda tangan baru untuk menggantinya.</p>
+                    {% endif %}
+                    <div class="signature-pad">
+                        <canvas id="ttd_canvas" width="800" height="200"></canvas>
+                    </div>
+                    <div class="signature-actions">
+                        <button type="button" id="clear_signature" class="btn-link">Clear</button>
+                    </div>
+                    <input type="hidden" id="ttd" name="ttd" {% if not biodata or not biodata.tanda_tangan %}required{% endif %} data-has-signature="{% if biodata and biodata.tanda_tangan %}true{% else %}false{% endif %}" data-signature-value="{% if biodata and biodata.tanda_tangan %}{% if 'uploads/' in biodata.tanda_tangan or biodata.tanda_tangan.startswith('static/') %}{{ url_for('static', filename=biodata.tanda_tangan) }}{% else %}{{ biodata.tanda_tangan|e }}{% endif %}{% endif %}">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" name="action" value="save">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+     <script>
+         document.addEventListener('DOMContentLoaded', function () {
+            // NIK Lookup untuk auto-fill form
+            const nikLookupInput = document.getElementById('nik_lookup');
+            const nikLookupFeedback = document.getElementById('nik-lookup-feedback');
+            let nikLookupTimeout;
+            let isAutoFilling = false; // Flag untuk menandai sedang auto-fill dari NIK lookup
+
+            // Fungsi untuk set readonly pada field tertentu saat data ditemukan
+            function setReadonlyFields() {
+                // Input fields menggunakan readonly
+                const inputFields = ['nama_lengkap', 'NIK', 'tempat_lahir', 'tanggal_lahir'];
+                inputFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.setAttribute('readonly', 'readonly');
+                    }
+                });
+
+                // Select fields menggunakan disabled
+                const selectFields = ['jenis_kelamin', 'agama'];
+                selectFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.setAttribute('disabled', 'disabled');
+                    }
+                });
+            }
+
+            // Fungsi untuk hapus readonly pada field tertentu saat data tidak ditemukan atau kosong
+            function removeReadonlyFields() {
+                // Input fields: hapus readonly
+                const inputFields = ['nama_lengkap', 'NIK', 'tempat_lahir', 'tanggal_lahir'];
+                inputFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.removeAttribute('readonly');
+                    }
+                });
+
+                // Select fields: hapus disabled
+                const selectFields = ['jenis_kelamin', 'agama'];
+                selectFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.removeAttribute('disabled');
+                    }
+                });
+            }
+
+            // Fungsi untuk membersihkan semua field form
+            function clearAllFormFields() {
+                console.log('🧹 Membersihkan semua field form...');
+
+                // Clear semua input text fields
+                const textInputs = ['nama_lengkap', 'NIK', 'nip_nippk', 'tempat_lahir', 'tanggal_lahir',
+                                  'jurusan', 'alamat_domisili', 'alamat_email', 'no_hp', 'npwp',
+                                  'jabatan', 'instansi', 'alamat_instansi', 'kabko_lainnya',
+                                  'waktu_pelaksanaan', 'tempat_pelaksanaan', 'no_rekening',
+                                  'nama_pemilik_rekening', 'nama_bank_lainnya'];
+                textInputs.forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) input.value = '';
+                });
+
+                // Clear semua select dropdowns (reset ke default)
+                const selectInputs = ['nama_kegiatan', 'jenis_kelamin', 'agama', 'pendidikan_terakhir',
+                                    'status_asn', 'pangkat_golongan', 'kabupaten_kota', 'peran', 'nama_bank'];
+                selectInputs.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (select) {
+                        select.selectedIndex = 0; // Reset ke option pertama
+                        // Trigger change event untuk reset dependent fields
+                        select.dispatchEvent(new Event('change'));
+                    }
+                });
+
+                // Clear file inputs
+                const bukuTabunganInput = document.getElementById('buku_tabungan');
+                if (bukuTabunganInput) {
+                    bukuTabunganInput.value = '';
+                    bukuTabunganInput.required = true; // Set kembali required
+                }
+
+                // Clear hidden inputs
+                const existingBukuTabunganPath = document.getElementById('existing_buku_tabungan_path');
+                if (existingBukuTabunganPath) existingBukuTabunganPath.value = '';
+
+                // Clear image previews
+                const bukuTabunganPreview = document.getElementById('buku_tabungan_preview');
+                if (bukuTabunganPreview) bukuTabunganPreview.style.display = 'none';
+
+                const bukuTabunganImg = document.getElementById('buku_tabungan_img');
+                if (bukuTabunganImg) bukuTabunganImg.src = '';
+
+                const bukuTabunganText = document.getElementById('buku_tabungan_text');
+                if (bukuTabunganText) bukuTabunganText.textContent = 'Choose File';
+
+                // Clear existing buku tabungan image container
+                const existingBukuTabunganContainer = document.querySelector('.image-preview.existing-image');
+                if (existingBukuTabunganContainer) {
+                    existingBukuTabunganContainer.style.display = 'none';
+                    const existingImg = document.getElementById('existing_buku_tabungan_img');
+                    if (existingImg) existingImg.src = '';
+                }
+
+                // Clear signature canvas
+                const canvas = document.getElementById('ttd_canvas');
+                const signatureInput = document.getElementById('ttd');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        // Clear canvas dengan background putih
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                }
+                if (signatureInput) {
+                    signatureInput.value = '';
+                    signatureInput.required = true; // Set kembali required
+                    signatureInput.removeAttribute('data-has-signature');
+                }
+
+                console.log('✅ Semua field form telah dibersihkan');
+            }
+
+            function loadLatestDataByNik(nik) {
+                // Validasi panjang NIK
+                if (!nik || nik.length !== 16) {
+                    console.log('NIK validation failed: length check', nik ? nik.length : 0);
+                    return;
+                }
+
+                // Validasi hanya angka
+                if (!/^\d{16}$/.test(nik)) {
+                    console.log('NIK validation failed: not all digits', nik);
+                    return;
+                }
+
+                // Pastikan NIK adalah string
+                nik = String(nik);
+
+                nikLookupFeedback.style.display = 'block';
+                nikLookupFeedback.textContent = '⏳ Mencari data...';
+                nikLookupFeedback.className = 'nik-feedback';
+
+                const requestData = { nik: nik };
+                console.log('Sending request to /api/get-latest-by-nik with data:', requestData);
+
+                fetch('/api/get-latest-by-nik', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(async response => {
+                    if (!response.ok) {
+                        // Coba ambil error message dari response
+                        let errorMessage = `HTTP error! status: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorData.error || errorMessage;
+                            console.error('API Error Response:', errorData);
+                        } catch (e) {
+                            console.error('Could not parse error response:', e);
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.data) {
+                        nikLookupFeedback.textContent = '✓ Data ditemukan! Mengisi form...';
+                        nikLookupFeedback.className = 'nik-feedback available';
+
+                        // Auto-fill form dengan data yang ditemukan
+                        const biodata = data.data;
+
+                        // Debug: Log semua data yang diterima
+                        console.log('🔍 Data diterima dari API:', biodata);
+                        console.log('🔍 tanggal_lahir value:', biodata.tanggal_lahir);
+                        console.log('🔍 tanggal_lahir type:', typeof biodata.tanggal_lahir);
+
+                        // Isi semua field yang ada di form
+                        // Reset field nama_kegiatan, waktu_pelaksanaan, tempat_pelaksanaan, dan peran
+                        const namaKegiatanSelect = document.getElementById('nama_kegiatan');
+                        if (namaKegiatanSelect) {
+                            namaKegiatanSelect.value = '';
+                        }
+
+                        const waktuPelaksanaanInput = document.getElementById('waktu_pelaksanaan');
+                        if (waktuPelaksanaanInput) waktuPelaksanaanInput.value = '';
+
+                        const tempatPelaksanaanInput = document.getElementById('tempat_pelaksanaan');
+                        if (tempatPelaksanaanInput) tempatPelaksanaanInput.value = '';
+
+                        const peranSelect = document.getElementById('peran');
+                        if (peranSelect) peranSelect.value = '';
+
+                        if (biodata.nama_lengkap) {
+                            const namaLengkapInput = document.getElementById('nama_lengkap');
+                            if (namaLengkapInput) namaLengkapInput.value = biodata.nama_lengkap;
+                        }
+
+                        // Isi NIK otomatis dari data yang ditemukan
+                        if (biodata.nik) {
+                            const nikInput = document.getElementById('NIK');
+                            if (nikInput) {
+                                nikInput.value = biodata.nik || '';
+                                // Tidak perlu trigger validasi NIK saat auto-fill
+                                // Validasi hanya diperlukan saat user mengetik manual
+                            }
+                        }
+
+                        if (biodata.nip_nippk) {
+                            const nipInput = document.getElementById('nip_nippk');
+                            if (nipInput) nipInput.value = biodata.nip_nippk || '';
+                        }
+
+                        if (biodata.tempat_lahir) {
+                            const tempatLahirInput = document.getElementById('tempat_lahir');
+                            if (tempatLahirInput) tempatLahirInput.value = biodata.tempat_lahir || '';
+                        }
+
+                        // Auto-fill tanggal lahir (prioritas tinggi - isi di awal)
+                        const tanggalLahirInput = document.getElementById('tanggal_lahir');
+                        if (tanggalLahirInput) {
+                            // Cek berbagai kemungkinan key untuk tanggal_lahir (case insensitive)
+                            const tanggalLahirKey = Object.keys(biodata).find(key =>
+                                key.toLowerCase() === 'tanggal_lahir' ||
+                                key.toLowerCase() === 'tanggal-lahir' ||
+                                key.toLowerCase().includes('tanggal') && key.toLowerCase().includes('lahir')
+                            );
+                            const tanggalLahirValue = tanggalLahirKey ? biodata[tanggalLahirKey] : biodata.tanggal_lahir;
+
+                            if (tanggalLahirValue) {
+                                // Jika berupa string, gunakan langsung. Jika berupa Date object, format
+                                let tanggalValue = tanggalLahirValue;
+                                if (tanggalLahirValue instanceof Date) {
+                                    tanggalValue = tanggalLahirValue.toISOString().split('T')[0];
+                                } else if (typeof tanggalLahirValue === 'string') {
+                                    // Pastikan format YYYY-MM-DD
+                                    if (tanggalLahirValue.includes('T')) {
+                                        tanggalValue = tanggalLahirValue.split('T')[0];
+                                    } else {
+                                        tanggalValue = tanggalLahirValue;
+                                    }
+                                }
+                                console.log('🔍 Auto-filling tanggal_lahir:', tanggalValue, '(original:', tanggalLahirValue, ')');
+                                tanggalLahirInput.value = tanggalValue;
+                            } else {
+                                console.log('⚠️ biodata.tanggal_lahir tidak ditemukan atau kosong. Keys tersedia:', Object.keys(biodata));
+                            }
+                        } else {
+                            console.error('❌ Element tanggal_lahir tidak ditemukan di DOM');
+                        }
+
+                        // Set readonly pada field setelah data ditemukan
+                        setReadonlyFields();
+
+                        if (biodata.jenis_kelamin) {
+                            const jenisKelaminSelect = document.getElementById('jenis_kelamin');
+                            const jenisKelaminHidden = document.getElementById('jenis_kelamin_hidden');
+                            if (jenisKelaminSelect) {
+                                jenisKelaminSelect.value = biodata.jenis_kelamin || '';
+                            }
+                            if (jenisKelaminHidden) {
+                                jenisKelaminHidden.value = biodata.jenis_kelamin || '';
+                            }
+                        }
+
+                        if (biodata.agama) {
+                            const agamaSelect = document.getElementById('agama');
+                            const agamaHidden = document.getElementById('agama_hidden');
+                            if (agamaSelect) {
+                                agamaSelect.value = biodata.agama || '';
+                            }
+                            if (agamaHidden) {
+                                agamaHidden.value = biodata.agama || '';
+                            }
+                        }
+
+                        if (biodata.pendidikan_terakhir) {
+                            const pendidikanSelect = document.getElementById('pendidikan_terakhir');
+                            if (pendidikanSelect) pendidikanSelect.value = biodata.pendidikan_terakhir || '';
+                        }
+
+                        if (biodata.jurusan) {
+                            const jurusanInput = document.getElementById('jurusan');
+                            if (jurusanInput) jurusanInput.value = biodata.jurusan || '';
+                        }
+
+                        if (biodata.alamat_domisili) {
+                            const alamatDomisiliInput = document.getElementById('alamat_domisili');
+                            if (alamatDomisiliInput) alamatDomisiliInput.value = biodata.alamat_domisili || '';
+                        }
+
+                        if (biodata.alamat_email) {
+                            const alamatEmailInput = document.getElementById('alamat_email');
+                            if (alamatEmailInput) alamatEmailInput.value = biodata.alamat_email || '';
+                        }
+
+                        if (biodata.no_hp) {
+                            const noHpInput = document.getElementById('no_hp');
+                            if (noHpInput) noHpInput.value = biodata.no_hp || '';
+                        }
+
+                        if (biodata.npwp) {
+                            const npwpInput = document.getElementById('npwp');
+                            if (npwpInput) npwpInput.value = biodata.npwp || '';
+                        }
+
+                        if (biodata.status_asn) {
+                            const statusAsnSelect = document.getElementById('status_asn');
+                            if (statusAsnSelect) {
+                                statusAsnSelect.value = biodata.status_asn || '';
+                                // Trigger change event untuk memfilter pangkat/golongan
+                                statusAsnSelect.dispatchEvent(new Event('change'));
+                            }
+                        }
+
+                        if (biodata.pangkat_golongan) {
+                            const pangkatSelect = document.getElementById('pangkat_golongan');
+                            if (pangkatSelect) pangkatSelect.value = biodata.pangkat_golongan || '';
+                        }
+
+                        if (biodata.jabatan) {
+                            const jabatanInput = document.getElementById('jabatan');
+                            if (jabatanInput) jabatanInput.value = biodata.jabatan || '';
+                        }
+
+                        if (biodata.instansi) {
+                            const instansiInput = document.getElementById('instansi');
+                            if (instansiInput) instansiInput.value = biodata.instansi || '';
+                        }
+
+                        if (biodata.alamat_instansi) {
+                            const alamatInstansiInput = document.getElementById('alamat_instansi');
+                            if (alamatInstansiInput) alamatInstansiInput.value = biodata.alamat_instansi || '';
+                        }
+
+                        if (biodata.kabupaten_kota) {
+                            const kabupatenSelect = document.getElementById('kabupaten_kota');
+                            if (kabupatenSelect) {
+                                kabupatenSelect.value = biodata.kabupaten_kota || '';
+                                // Trigger change untuk toggle kabko_lainnya jika perlu
+                                kabupatenSelect.dispatchEvent(new Event('change'));
+                            }
+                        }
+
+                        if (biodata.kabko_lainnya) {
+                            const kabkoLainnyaInput = document.getElementById('kabko_lainnya');
+                            if (kabkoLainnyaInput) kabkoLainnyaInput.value = biodata.kabko_lainnya || '';
+                        }
+
+                        if (biodata.nama_bank) {
+                            const namaBankSelect = document.getElementById('nama_bank');
+                            if (namaBankSelect) {
+                                namaBankSelect.value = biodata.nama_bank || '';
+                                // Trigger change untuk toggle bank_lainnya jika perlu
+                                namaBankSelect.dispatchEvent(new Event('change'));
+                            }
+                        }
+
+                        if (biodata.nama_bank_lainnya) {
+                            const namaBankLainnyaInput = document.getElementById('nama_bank_lainnya');
+                            if (namaBankLainnyaInput) namaBankLainnyaInput.value = biodata.nama_bank_lainnya || '';
+                        }
+
+                        if (biodata.no_rekening) {
+                            const noRekeningInput = document.getElementById('no_rekening');
+                            if (noRekeningInput) noRekeningInput.value = biodata.no_rekening || '';
+                        }
+
+                        if (biodata.nama_pemilik_rekening) {
+                            const namaPemilikRekeningInput = document.getElementById('nama_pemilik_rekening');
+                            if (namaPemilikRekeningInput) namaPemilikRekeningInput.value = biodata.nama_pemilik_rekening || '';
+                        }
+
+                        // Load buku tabungan preview jika ada
+                        if (biodata.buku_tabungan_path) {
+                            const bukuTabunganPreview = document.getElementById('buku_tabungan_preview');
+                            const bukuTabunganImg = document.getElementById('buku_tabungan_img');
+                            const bukuTabunganText = document.getElementById('buku_tabungan_text');
+                            const bukuTabunganHidden = document.getElementById('existing_buku_tabungan_path');
+                            const existingBukuTabunganContainer = document.querySelector('.image-preview.existing-image');
+
+                            // Buat container untuk existing image jika belum ada
+                            let existingContainer = existingBukuTabunganContainer;
+                            if (!existingContainer) {
+                                const bukuTabunganGroup = document.querySelector('[for="buku_tabungan"]').closest('.form-group');
+                                existingContainer = document.createElement('div');
+                                existingContainer.className = 'image-preview existing-image';
+                                existingContainer.style.marginTop = '10px';
+                                existingContainer.innerHTML = `
+                                    <p style="font-size: 12px; color: #666; margin-bottom: 5px;">Foto dari data sebelumnya:</p>
+                                    <span class="image-preview-label" style="display: block; margin-bottom: 8px;">Klik gambar untuk memperbesar</span>
+                                    <img src="" alt="Foto Buku Tabungan" id="existing_buku_tabungan_img" style="max-width: 100%; height: auto; cursor: pointer;" onerror="this.style.display='none'; this.parentElement.querySelector('p').textContent='Foto tidak ditemukan';">
+                                `;
+                                bukuTabunganGroup.appendChild(existingContainer);
+                            }
+
+                            // Set image source
+                            let existingImg = document.getElementById('existing_buku_tabungan_img');
+                            if (!existingImg) {
+                                // Buat elemen img baru jika belum ada
+                                existingImg = document.createElement('img');
+                                existingImg.id = 'existing_buku_tabungan_img';
+                                existingImg.alt = 'Foto Buku Tabungan';
+                                existingImg.style.maxWidth = '100%';
+                                existingImg.style.height = 'auto';
+                                existingImg.style.cursor = 'pointer';
+                                existingContainer.appendChild(existingImg);
+                            }
+
+                            // Normalize path dan buat URL untuk akses gambar
+                            let imgPath = biodata.buku_tabungan_path;
+                            // Pastikan path dimulai dengan 'static/'
+                            if (!imgPath.startsWith('static/')) {
+                                if (imgPath.startsWith('uploads/')) {
+                                    imgPath = 'static/' + imgPath;
+                                } else {
+                                    imgPath = 'static/uploads/' + imgPath;
+                                }
+                            }
+
+                            // Buat URL menggunakan Flask url_for pattern (relative dari root)
+                            // Di browser, kita perlu menggunakan path relatif atau full URL
+                            existingImg.src = '/' + imgPath;
+                            existingImg.style.cursor = 'pointer';
+                            existingImg.title = 'Klik untuk memperbesar';
+                            existingContainer.style.display = 'block';
+
+                            // Simpan path existing ke hidden input untuk backend
+                            if (bukuTabunganHidden) {
+                                // Simpan tanpa prefix 'static/' agar konsisten dengan penyimpanan
+                                bukuTabunganHidden.value = imgPath.startsWith('static/') ? imgPath.replace(/^static\//, '') : imgPath;
+                            }
+
+                            // Tambahkan event listener untuk modal preview jika modal sudah dibuat
+                            existingImg.addEventListener('click', function() {
+                                if (this.src) {
+                                    const modal = document.getElementById('imageModal');
+                                    if (modal) {
+                                        const modalImg = document.getElementById('modalImage');
+                                        if (modalImg) {
+                                            modalImg.src = this.src;
+                                            modal.classList.add('show');
+                                            document.body.style.overflow = 'hidden';
+                                        }
+                                    }
+                                }
+                            });
+
+                            // Update text untuk menunjukkan file sudah ada
+                            if (bukuTabunganText) {
+                                bukuTabunganText.textContent = 'File dari data sebelumnya (tersedia)';
+                            }
+
+                            // Remove required attribute dari file input karena sudah ada file
+                            const bukuTabunganInput = document.getElementById('buku_tabungan');
+                            if (bukuTabunganInput) {
+                                bukuTabunganInput.removeAttribute('required');
+                            }
+                        }
+
+                        // Load tanda tangan ke canvas jika ada
+                        if (biodata.tanda_tangan) {
+                            const canvas = document.getElementById('ttd_canvas');
+                            const ctx = canvas.getContext('2d');
+                            const signatureInput = document.getElementById('ttd');
+
+                            if (canvas && ctx && signatureInput) {
+                                let ttdPath = biodata.tanda_tangan;
+
+                                // Handle jika sudah base64
+                                if (ttdPath.startsWith('data:image')) {
+                                    // Langsung load base64 ke canvas
+                                    const img = new Image();
+                                    img.onload = function() {
+                                        ctx.fillStyle = '#FFFFFF';
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                        signatureInput.value = canvas.toDataURL('image/png');
+                                        signatureInput.setAttribute('data-has-signature', 'true');
+                                    };
+                                    img.onerror = function() {
+                                        console.error('Error loading base64 signature');
+                                    };
+                                    img.src = ttdPath;
+                                } else {
+                                    // Handle path file
+                                    // Normalize path
+                                    if (!ttdPath.startsWith('static/')) {
+                                        if (ttdPath.startsWith('uploads/')) {
+                                            ttdPath = 'static/' + ttdPath;
+                                        } else {
+                                            ttdPath = 'static/uploads/' + ttdPath;
+                                        }
+                                    }
+
+                                    // Load image ke canvas
+                                    const img = new Image();
+                                    img.crossOrigin = 'anonymous';
+                                    img.onload = function() {
+                                        // Clear canvas dengan background putih
+                                        ctx.fillStyle = '#FFFFFF';
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                        // Draw image ke canvas
+                                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                        // Update hidden input dengan base64 dari canvas
+                                        signatureInput.value = canvas.toDataURL('image/png');
+                                        signatureInput.setAttribute('data-has-signature', 'true');
+                                    };
+                                    img.onerror = function() {
+                                        console.error('Error loading signature image:', ttdPath);
+                                        // Coba dengan path alternatif
+                                        if (ttdPath.startsWith('static/')) {
+                                            img.src = '/' + ttdPath;
+                                        } else if (!ttdPath.startsWith('/')) {
+                                            img.src = '/' + ttdPath;
+                                        }
+                                    };
+                                    img.src = '/' + ttdPath;
+                                }
+
+                                // Remove required attribute karena tanda tangan sudah ada
+                                signatureInput.removeAttribute('required');
+                            }
+                        }
+
+                        // Set timeout untuk hide feedback setelah 3 detik
+                        setTimeout(() => {
+                            nikLookupFeedback.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        nikLookupFeedback.textContent = '✗ ' + (data.message || 'Tidak ada data ditemukan untuk NIK tersebut');
+                        nikLookupFeedback.className = 'nik-feedback unavailable';
+
+                        // Bersihkan semua field form saat tidak ada data ditemukan
+                        clearAllFormFields();
+
+                        // Hapus readonly agar field bisa diisi manual
+                        removeReadonlyFields();
+
+                        setTimeout(() => {
+                            nikLookupFeedback.style.display = 'none';
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading biodata by NIK:', error);
+                    nikLookupFeedback.textContent = '✗ Terjadi kesalahan saat mencari data. Silakan coba lagi.';
+                    nikLookupFeedback.className = 'nik-feedback unavailable';
+
+                    // Bersihkan semua field form saat terjadi error
+                    clearAllFormFields();
+
+                    // Hapus readonly agar field bisa diisi manual
+                    removeReadonlyFields();
+
+                    // Tampilkan error lebih lama agar user bisa membaca
+                    setTimeout(() => {
+                        nikLookupFeedback.style.display = 'none';
+                    }, 5000);
+                });
+            }
+
+            nikLookupInput.addEventListener('input', function() {
+                // Hapus semua karakter non-digit dan batasi 16 digit
+                let nik = String(this.value).replace(/\s+/g, '').replace(/[^0-9]/g, '').slice(0, 16);
+                this.value = nik;
+
+                // Clear previous timeout
+                clearTimeout(nikLookupTimeout);
+
+                // Jika NIK sudah 16 digit, fetch data setelah user berhenti mengetik (debounce 800ms)
+                if (nik.length === 16) {
+                    nikLookupTimeout = setTimeout(() => {
+                        loadLatestDataByNik(nik);
+                    }, 800);
+                } else if (nik.length > 0 && nik.length < 16) {
+                    nikLookupFeedback.style.display = 'block';
+                    nikLookupFeedback.textContent = '⚠ Masukkan 16 digit NIK (' + nik.length + '/16)';
+                    nikLookupFeedback.className = 'nik-feedback unavailable';
+                } else {
+                    // Jika input dikosongkan, bersihkan form dan sembunyikan feedback
+                    nikLookupFeedback.style.display = 'none';
+                    clearAllFormFields();
+                    // Hapus readonly agar field bisa diisi manual
+                    removeReadonlyFields();
+                }
+            });
+
+            // Validasi NIK real-time
+            const nikInput = document.getElementById('NIK');
+            const nikFeedback = document.getElementById('nik-feedback');
+            let nikCheckTimeout;
+            const originalNik = '{{ biodata.nik if biodata else "" }}';
+
+            function checkNikAvailability(nik) {
+                // Bersihkan NIK dari whitespace dan karakter non-digit dengan lebih teliti
+                nik = String(nik).replace(/\s+/g, '').replace(/[^0-9]/g, '');
+
+                // Validasi panjang NIK
+                if (!nik || nik.length !== 16) {
+                    if (nik.length > 0 && nik.length < 16) {
+                        nikFeedback.style.display = 'block';
+                        nikFeedback.textContent = '⚠ NIK harus 16 digit (' + nik.length + '/16)';
+                        nikFeedback.className = 'nik-feedback unavailable';
+                        nikInput.setCustomValidity('NIK harus tepat 16 digit');
+                    } else {
+                        nikFeedback.style.display = 'none';
+                        nikInput.setCustomValidity('');
+                    }
+                    return;
+                }
+
+                // Validasi hanya angka (sudah dibersihkan di atas, tapi double check)
+                if (!/^\d{16}$/.test(nik)) {
+                    nikFeedback.style.display = 'block';
+                    nikFeedback.textContent = '✗ NIK harus berupa angka';
+                    nikFeedback.className = 'nik-feedback unavailable';
+                    nikInput.setCustomValidity('NIK harus berupa angka');
+                    return;
+                }
+
+                fetch('/check-nik', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ nik: nik })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.available) {
+                        // NIK valid - sembunyikan feedback (tidak tampilkan pesan sukses)
+                        nikFeedback.style.display = 'none';
+                        nikInput.setCustomValidity('');
+                    } else {
+                        // Jika ada error format atau validasi lainnya
+                        nikFeedback.style.display = 'block';
+                        nikFeedback.textContent = '⚠ ' + (data.message || 'Periksa format NIK');
+                        nikFeedback.className = 'nik-feedback unavailable';
+                        nikInput.setCustomValidity(data.message || 'Periksa format NIK');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking NIK:', error);
+                    nikFeedback.style.display = 'none';
+                });
+            }
+
+            nikInput.addEventListener('input', function() {
+                // Hapus semua karakter non-digit dan batasi 16 digit
+                let nik = String(this.value).replace(/\s+/g, '').replace(/[^0-9]/g, '').slice(0, 16);
+                this.value = nik;
+
+                // Clear previous timeout
+                clearTimeout(nikCheckTimeout);
+
+                // Validasi panjang NIK
+                if (nik.length > 16) {
+                    nik = nik.substring(0, 16);
+                    this.value = nik;
+                }
+
+                // Only check if NIK has changed from original
+                if (nik !== originalNik && nik.length === 16) {
+                    // Debounce: wait 500ms after user stops typing
+                    nikCheckTimeout = setTimeout(() => {
+                        checkNikAvailability(nik);
+                    }, 500);
+                } else if (nik === originalNik) {
+                    // If NIK is same as original, hide feedback
+                    nikFeedback.style.display = 'none';
+                    nikInput.setCustomValidity('');
+                } else if (nik.length > 0 && nik.length < 16) {
+                    // Show warning if NIK is not complete
+                    nikFeedback.style.display = 'block';
+                    nikFeedback.textContent = '⚠ NIK harus 16 digit (' + nik.length + '/16)';
+                    nikFeedback.className = 'nik-feedback unavailable';
+                    nikInput.setCustomValidity('NIK harus tepat 16 digit');
+                } else if (nik.length === 16) {
+                    // NIK sudah 16 digit, clear error dan validasi
+                    nikFeedback.style.display = 'none';
+                    nikInput.setCustomValidity('');
+                    // Pastikan format benar
+                    if (/^\d{16}$/.test(nik)) {
+                        nikInput.setCustomValidity('');
+                    } else {
+                        nikInput.setCustomValidity('NIK harus berupa angka');
+                    }
+                } else {
+                    nikFeedback.style.display = 'none';
+                    nikInput.setCustomValidity('');
+                }
+            });
+
+            // Validasi NIP/NIPPK real-time
+            const nipInput = document.getElementById('nip_nippk');
+            const nipFeedback = document.getElementById('nip-feedback');
+            let nipCheckTimeout;
+            const originalNip = '{{ biodata.nip_nippk if biodata else "" }}';
+
+            function checkNipFormat(nip) {
+                // Bersihkan NIP dari whitespace dan karakter non-digit
+                nip = String(nip).replace(/\s+/g, '').replace(/[^0-9]/g, '');
+
+                // Validasi panjang NIP
+                if (!nip || nip.length !== 18) {
+                    if (nip.length > 0 && nip.length < 18) {
+                        nipFeedback.style.display = 'block';
+                        nipFeedback.textContent = '⚠ NIP/NIPPK harus 18 digit (' + nip.length + '/18)';
+                        nipFeedback.className = 'nik-feedback unavailable';
+                        nipInput.setCustomValidity('NIP/NIPPK harus tepat 18 digit');
+                    } else {
+                        nipFeedback.style.display = 'none';
+                        nipInput.setCustomValidity('');
+                    }
+                    return;
+                }
+
+                // Validasi hanya angka
+                if (!/^\d{18}$/.test(nip)) {
+                    nipFeedback.style.display = 'block';
+                    nipFeedback.textContent = '✗ NIP/NIPPK harus berupa angka';
+                    nipFeedback.className = 'nik-feedback unavailable';
+                    nipInput.setCustomValidity('NIP/NIPPK harus berupa angka');
+                    return;
+                }
+
+                // NIP valid
+                nipFeedback.style.display = 'none';
+                nipInput.setCustomValidity('');
+            }
+
+            nipInput.addEventListener('input', function() {
+                // Hapus semua karakter non-digit dan batasi 18 digit
+                let nip = String(this.value).replace(/\s+/g, '').replace(/[^0-9]/g, '').slice(0, 18);
+                this.value = nip;
+
+                // Clear previous timeout
+                clearTimeout(nipCheckTimeout);
+
+                // Validasi panjang NIP
+                if (nip.length > 18) {
+                    nip = nip.substring(0, 18);
+                    this.value = nip;
+                }
+
+                // Only check if NIP has changed from original
+                if (nip !== originalNip && nip.length === 18) {
+                    // Debounce: wait 500ms after user stops typing
+                    nipCheckTimeout = setTimeout(() => {
+                        checkNipFormat(nip);
+                    }, 500);
+                } else if (nip === originalNip) {
+                    // If NIP is same as original, hide feedback
+                    nipFeedback.style.display = 'none';
+                    nipInput.setCustomValidity('');
+                } else if (nip.length > 0 && nip.length < 18) {
+                    // Show warning if NIP is not complete
+                    nipFeedback.style.display = 'block';
+                    nipFeedback.textContent = '⚠ NIP/NIPPK harus 18 digit (' + nip.length + '/18)';
+                    nipFeedback.className = 'nik-feedback unavailable';
+                    nipInput.setCustomValidity('NIP/NIPPK harus tepat 18 digit');
+                } else if (nip.length === 18) {
+                    // NIP sudah 18 digit, clear error dan validasi
+                    nipFeedback.style.display = 'none';
+                    nipInput.setCustomValidity('');
+                    // Pastikan format benar
+                    if (/^\d{18}$/.test(nip)) {
+                        nipInput.setCustomValidity('');
+                    } else {
+                        nipInput.setCustomValidity('NIP/NIPPK harus berupa angka');
+                    }
+                } else {
+                    nipFeedback.style.display = 'none';
+                    nipInput.setCustomValidity('');
+                }
+            });
+
+            // Validate on form submit
+            const form = document.querySelector('.biodata-form');
+            let isSubmitting = false;
+
+            // Simpan tanda tangan existing jika ada (didefinisikan di scope yang lebih luas)
+            const ttdInput = document.getElementById('ttd');
+            let existingSignatureValue = null;
+            if (ttdInput && ttdInput.dataset.hasSignature === 'true' && ttdInput.dataset.signatureValue) {
+                existingSignatureValue = ttdInput.dataset.signatureValue;
+            }
+
+            // Fungsi untuk menampilkan konfirmasi sebelum submit menggunakan SweetAlert
+            function showSubmitConfirmation(onConfirm) {
+                const namaKegiatanSelect = document.getElementById('nama_kegiatan');
+                const namaKegiatan = namaKegiatanSelect ? namaKegiatanSelect.options[namaKegiatanSelect.selectedIndex].text : '';
+                const namaLengkap = document.getElementById('nama_lengkap')?.value || '';
+                const nik = document.getElementById('NIK')?.value || '';
+
+                // Build HTML message untuk SweetAlert dengan format rapi agar ":" sejajar
+                let confirmHtml = 'Apakah Anda yakin ingin menyimpan data ini?<br><br>';
+                confirmHtml += '<div style="text-align: left; margin: 0 auto; display: inline-block;">';
+
+                if (namaLengkap) {
+                    confirmHtml += `<div style="margin-bottom: 8px;"><span style="display: inline-block; width: 75px; font-weight: bold;">Nama</span><span style="margin-right: 8px;"> :</span>${namaLengkap}</div>`;
+                }
+                if (nik) {
+                    confirmHtml += `<div style="margin-bottom: 8px;"><span style="display: inline-block; width: 75px; font-weight: bold;">NIK</span><span style="margin-right: 8px;"> :</span>${nik}</div>`;
+                }
+                if (namaKegiatan) {
+                    confirmHtml += `<div style="margin-bottom: 8px;"><span style="display: inline-block; width: 75px; font-weight: bold;">Kegiatan</span><span style="margin-right: 8px;"> :</span>${namaKegiatan}</div>`;
+                }
+
+                confirmHtml += '</div>';
+                confirmHtml += '<br><span style="color: #059669;"><strong>Pastikan semua data sudah benar.</strong></span>';
+
+                Swal.fire({
+                    title: 'Simpan Data?',
+                    html: confirmHtml,
+                    showCancelButton: true,
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Simpan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // User klik Ya, Simpan - lanjutkan submit
+                        onConfirm();
+                    } else {
+                        // User klik Batal - batalkan submit dan reset isSubmitting
+                        isSubmitting = false;
+                    }
+                });
+            }
+
+            form.addEventListener('submit', function submitHandler(e) {
+                // Prevent multiple submissions
+                if (isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                const submitter = e.submitter || document.activeElement;
+
+                console.log('🔍 Form submit - submitter:', submitter, 'action:', submitter?.value);
+
+                // Jika tanda tangan kosong tapi ada tanda tangan existing, gunakan yang existing
+                if (!signatureInput.value && existingSignatureValue) {
+                    signatureInput.value = existingSignatureValue;
+                }
+
+                // Cek kegiatan terlebih dahulu
+                const namaKegiatanSelect = document.getElementById('nama_kegiatan');
+                const namaKegiatan = namaKegiatanSelect ? namaKegiatanSelect.value.trim() : '';
+
+                if (!namaKegiatan) {
+                    // Kegiatan belum dipilih, biarkan validasi HTML5 menangani
+                    return;
+                }
+
+                // Prevent default submission untuk validasi
+                e.preventDefault();
+                isSubmitting = true;
+
+                // Validasi NIK
+                    // Bersihkan NIK dengan lebih teliti - hapus semua whitespace dan non-digit
+                    let finalNik = String(nikInput.value).replace(/\s+/g, '').replace(/[^0-9]/g, '');
+
+                    // Update input dengan NIK yang sudah dibersihkan
+                    if (nikInput.value !== finalNik) {
+                        nikInput.value = finalNik;
+                    }
+
+                    // Debug: log untuk troubleshooting
+                    console.log('NIK cleaned:', finalNik, 'Length:', finalNik.length, 'Original:', nikInput.value);
+
+                    // Validasi NIK sebelum submit - pastikan tepat 16 digit
+                    if (!finalNik || finalNik.length !== 16) {
+                        isSubmitting = false;
+                        nikFeedback.style.display = 'block';
+                        if (finalNik.length === 0) {
+                            nikFeedback.textContent = '⚠ NIK harus diisi';
+                        } else {
+                            nikFeedback.textContent = '⚠ NIK harus 16 digit (saat ini: ' + finalNik.length + ' digit)';
+                        }
+                        nikFeedback.className = 'nik-feedback unavailable';
+                        nikInput.setCustomValidity('NIK harus tepat 16 digit');
+                        nikInput.reportValidity();
+                        return;
+                    }
+
+                    // Pastikan format benar (hanya angka, tepat 16 digit)
+                    if (!/^\d{16}$/.test(finalNik)) {
+                        isSubmitting = false;
+                        nikFeedback.style.display = 'block';
+                        nikFeedback.textContent = '✗ NIK harus berupa angka (16 digit)';
+                        nikFeedback.className = 'nik-feedback unavailable';
+                        nikInput.setCustomValidity('NIK harus berupa angka');
+                        nikInput.reportValidity();
+                        return;
+                    }
+
+                    // Clear custom validity jika NIK valid
+                    nikInput.setCustomValidity('');
+
+                    // Validasi NIP/NIPPK
+                    // Bersihkan NIP dengan lebih teliti - hapus semua whitespace dan non-digit
+                    let finalNip = String(nipInput.value).replace(/\s+/g, '').replace(/[^0-9]/g, '');
+
+                    // Update input dengan NIP yang sudah dibersihkan
+                    if (nipInput.value !== finalNip) {
+                        nipInput.value = finalNip;
+                    }
+
+                    // Debug: log untuk troubleshooting
+                    console.log('NIP cleaned:', finalNip, 'Length:', finalNip.length, 'Original:', nipInput.value);
+
+                    // Validasi NIP sebelum submit - pastikan tepat 18 digit
+                    if (!finalNip || finalNip.length !== 18) {
+                        isSubmitting = false;
+                        nipFeedback.style.display = 'block';
+                        if (finalNip.length === 0) {
+                            nipFeedback.textContent = '⚠ NIP/NIPPK harus diisi';
+                        } else {
+                            nipFeedback.textContent = '⚠ NIP/NIPPK harus 18 digit (saat ini: ' + finalNip.length + ' digit)';
+                        }
+                        nipFeedback.className = 'nik-feedback unavailable';
+                        nipInput.setCustomValidity('NIP/NIPPK harus tepat 18 digit');
+                        nipInput.reportValidity();
+                        return;
+                    }
+
+                    // Pastikan format benar (hanya angka, tepat 18 digit)
+                    if (!/^\d{18}$/.test(finalNip)) {
+                        isSubmitting = false;
+                        nipFeedback.style.display = 'block';
+                        nipFeedback.textContent = '✗ NIP/NIPPK harus berupa angka (18 digit)';
+                        nipFeedback.className = 'nik-feedback unavailable';
+                        nipInput.setCustomValidity('NIP/NIPPK harus berupa angka');
+                        nipInput.reportValidity();
+                        return;
+                    }
+
+                    // Clear custom validity jika NIP valid
+                    nipInput.setCustomValidity('');
+
+                    // Only check NIK if it's a new NIK (different from original) and form is for new data
+                    // For new data (originalNik is empty), always check NIK
+                    if (finalNik && finalNik.length === 16 && (!originalNik || finalNik !== originalNik)) {
+                        // Check NIK one more time before submit
+                        fetch('/check-nik', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ nik: finalNik })
+                        })
+                        .then(response => response.json())
+                        .then(nikData => {
+                            // NIK bisa digunakan untuk kegiatan baru meskipun sudah terdaftar
+                            // Validasi utama adalah format NIK (16 digit) yang sudah dicek sebelumnya
+                            if (!nikData.available && nikData.message && nikData.message.includes('digit')) {
+                                // Hanya blokir jika format NIK tidak valid
+                                isSubmitting = false;
+                                nikFeedback.style.display = 'block';
+                                nikFeedback.textContent = '✗ ' + nikData.message;
+                                nikFeedback.className = 'nik-feedback unavailable';
+                                nikInput.setCustomValidity(nikData.message);
+                                nikInput.reportValidity();
+                            } else {
+                                // NIK valid, tampilkan konfirmasi sebelum submit
+                                nikInput.setCustomValidity('');
+                                showSubmitConfirmation(function() {
+                                    // Remove the event listener to prevent infinite loop, then submit
+                                    form.removeEventListener('submit', submitHandler);
+                                    form.submit();
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error checking NIK on submit:', error);
+                            // On error, allow submission (server will validate)
+                            nikInput.setCustomValidity('');
+                            showSubmitConfirmation(function() {
+                                form.removeEventListener('submit', submitHandler);
+                                form.submit();
+                            });
+                        });
+                    } else {
+                        // If NIK hasn't changed or is same as original, tampilkan konfirmasi sebelum submit
+                        nikInput.setCustomValidity('');
+                        showSubmitConfirmation(function() {
+                            form.removeEventListener('submit', submitHandler);
+                            form.submit();
+                        });
+                    }
+            });
+
+            const namaBankSelect = document.getElementById('nama_bank');
+            const bankLainnyaGroup = document.getElementById('bank-lainnya-group');
+            const namaBankLainnyaInput = document.getElementById('nama_bank_lainnya');
+            const kabupatenSelect = document.getElementById('kabupaten_kota');
+            const kabkoLainnyaGroup = document.getElementById('kabko-lainnya-group');
+            const kabkoLainnyaInput = document.getElementById('kabko_lainnya');
+
+            function toggleGroup(selectElement, groupElement, inputElement, targetValue) {
+                const selectedOption = selectElement.options[selectElement.selectedIndex];
+                const selectedValue = selectedOption ? selectedOption.value.trim().toUpperCase() : '';
+                const shouldShow = selectedValue === targetValue;
+                groupElement.style.display = shouldShow ? 'block' : 'none';
+                inputElement.required = shouldShow;
+                if (!shouldShow) {
+                    inputElement.value = '';
+                }
+            }
+
+            namaBankSelect.addEventListener('change', function () {
+                toggleGroup(namaBankSelect, bankLainnyaGroup, namaBankLainnyaInput, 'BANK LAINNYA');
+            });
+
+            kabupatenSelect.addEventListener('change', function () {
+                toggleGroup(kabupatenSelect, kabkoLainnyaGroup, kabkoLainnyaInput, 'LAINNYA');
+            });
+
+            toggleGroup(namaBankSelect, bankLainnyaGroup, namaBankLainnyaInput, 'BANK LAINNYA');
+            toggleGroup(kabupatenSelect, kabkoLainnyaGroup, kabkoLainnyaInput, 'LAINNYA');
+
+            const bukuTabunganInput = document.getElementById('buku_tabungan');
+            const bukuTabunganText = document.getElementById('buku_tabungan_text');
+            const bukuTabunganPreview = document.getElementById('buku_tabungan_preview');
+            const bukuTabunganImg = document.getElementById('buku_tabungan_img');
+            const existingBukuTabunganImg = document.getElementById('existing_buku_tabungan_img');
+
+            // Buat modal untuk preview gambar
+            let imageModal = document.getElementById('imageModal');
+            if (!imageModal) {
+                imageModal = document.createElement('div');
+                imageModal.id = 'imageModal';
+                imageModal.className = 'image-modal';
+                imageModal.innerHTML = `
+                    <div class="image-modal-content">
+                        <span class="image-modal-close">&times;</span>
+                        <img id="modalImage" src="" alt="Preview Gambar">
+                    </div>
+                `;
+                document.body.appendChild(imageModal);
+            }
+
+            const modalImage = document.getElementById('modalImage');
+            const modalClose = imageModal.querySelector('.image-modal-close');
+
+            // Fungsi untuk membuka modal
+            function openImageModal(imgSrc) {
+                modalImage.src = imgSrc;
+                imageModal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+
+            // Fungsi untuk menutup modal
+            function closeImageModal() {
+                imageModal.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+
+            // Event listener untuk membuka modal saat klik gambar preview
+            bukuTabunganImg.addEventListener('click', function() {
+                if (this.src) {
+                    openImageModal(this.src);
+                }
+            });
+
+            // Event listener untuk membuka modal saat klik gambar existing
+            if (existingBukuTabunganImg) {
+                existingBukuTabunganImg.addEventListener('click', function() {
+                    if (this.src) {
+                        openImageModal(this.src);
+                    }
+                });
+            }
+
+            // Event listener untuk menutup modal
+            modalClose.addEventListener('click', closeImageModal);
+            imageModal.addEventListener('click', function(e) {
+                if (e.target === imageModal) {
+                    closeImageModal();
+                }
+            });
+
+            // Tutup modal dengan tombol ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && imageModal.classList.contains('show')) {
+                    closeImageModal();
+                }
+            });
+
+            bukuTabunganInput.addEventListener('change', function () {
+                if (bukuTabunganInput.files && bukuTabunganInput.files.length > 0) {
+                    const file = bukuTabunganInput.files[0];
+                    bukuTabunganText.textContent = file.name;
+
+                    // Tampilkan preview image
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        bukuTabunganImg.src = e.target.result;
+                        bukuTabunganPreview.style.display = 'block';
+
+                        // Tambahkan style cursor pointer dan title
+                        bukuTabunganImg.style.cursor = 'pointer';
+                        bukuTabunganImg.title = 'Klik untuk memperbesar';
+
+                        // Sembunyikan foto lama jika ada
+                        if (existingBukuTabunganImg && existingBukuTabunganImg.parentElement) {
+                            existingBukuTabunganImg.parentElement.style.display = 'none';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    bukuTabunganText.textContent = 'Choose File';
+                    bukuTabunganPreview.style.display = 'none';
+
+                    // Tampilkan kembali foto lama jika ada
+                    if (existingBukuTabunganImg && existingBukuTabunganImg.parentElement) {
+                        existingBukuTabunganImg.parentElement.style.display = 'block';
+                    }
+
+                    // Clear hidden existing path jika user hapus file baru
+                    const bukuTabunganHidden = document.getElementById('existing_buku_tabungan_path');
+                    if (bukuTabunganHidden) {
+                        bukuTabunganHidden.value = '';
+                    }
+                }
+            });
+
+            // Pastikan gambar existing juga bisa diklik
+            if (existingBukuTabunganImg) {
+                existingBukuTabunganImg.style.cursor = 'pointer';
+                existingBukuTabunganImg.title = 'Klik untuk memperbesar';
+            }
+
+            const canvas = document.getElementById('ttd_canvas');
+            const ctx = canvas.getContext('2d');
+            const signatureInput = document.getElementById('ttd');
+            const clearBtn = document.getElementById('clear_signature');
+            let drawing = false;
+
+            // Set canvas background putih
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            function getPosition(event) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+                const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            function startDrawing(event) {
+                event.preventDefault();
+                drawing = true;
+                ctx.beginPath();
+                const pos = getPosition(event);
+                ctx.moveTo(pos.x, pos.y);
+            }
+
+            function draw(event) {
+                if (!drawing) return;
+                event.preventDefault();
+                const pos = getPosition(event);
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#000000';
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                signatureInput.value = canvas.toDataURL('image/png');
+            }
+
+            function stopDrawing(event) {
+                if (!drawing) return;
+                event.preventDefault();
+                drawing = false;
+                ctx.closePath();
+                signatureInput.value = canvas.toDataURL('image/png');
+            }
+
+            function clearSignature() {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                signatureInput.value = '';
+            }
+
+            ['mousedown', 'touchstart'].forEach(evt => canvas.addEventListener(evt, startDrawing));
+            ['mousemove', 'touchmove'].forEach(evt => canvas.addEventListener(evt, draw));
+            ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => canvas.addEventListener(evt, stopDrawing));
+
+            clearBtn.addEventListener('click', clearSignature);
+
+            // Load existing signature if available
+            const ttdInputForSignature = document.getElementById('ttd');
+            if (ttdInputForSignature && ttdInputForSignature.dataset.hasSignature === 'true' && ttdInputForSignature.dataset.signatureValue) {
+                const existingSignature = ttdInputForSignature.dataset.signatureValue;
+                if (existingSignature && existingSignature.trim() !== '') {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = function() {
+                        // Clear canvas dengan background putih
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        // Draw image
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // Update input dengan base64 dari canvas
+                        signatureInput.value = canvas.toDataURL('image/png');
+                    };
+                    img.onerror = function() {
+                        console.error('Error loading signature image:', existingSignature);
+                    };
+                    img.src = existingSignature;
+                }
+            }
+
+            // Auto-fill waktu dan tempat pelaksanaan berdasarkan nama kegiatan
+            const namaKegiatanSelect = document.getElementById('nama_kegiatan');
+            const waktuPelaksanaanInput = document.getElementById('waktu_pelaksanaan');
+            const tempatPelaksanaanInput = document.getElementById('tempat_pelaksanaan');
+
+            let kegiatanCheckTimeout;
+            namaKegiatanSelect.addEventListener('change', function() {
+                const namaKegiatan = this.value.trim();
+
+                if (namaKegiatan) {
+                    // Clear previous timeout
+                    clearTimeout(kegiatanCheckTimeout);
+
+                    // Skip pengecekan jika sedang auto-fill dari NIK lookup
+                    // Karena auto-fill artinya user ingin menggunakan data tersebut
+                    if (isAutoFilling) {
+                        // Langsung fetch data kegiatan untuk waktu dan tempat pelaksanaan
+                        fetch(`/api/get-kegiatan/${encodeURIComponent(namaKegiatan)}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(kegiatanData => {
+                                if (kegiatanData.success && kegiatanData.data) {
+                                    waktuPelaksanaanInput.value = kegiatanData.data.waktu_pelaksanaan || '';
+                                    tempatPelaksanaanInput.value = kegiatanData.data.tempat_pelaksanaan || '';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching kegiatan during auto-fill:', error);
+                            });
+                        return; // Jangan lanjutkan ke pengecekan
+                    }
+
+                    // Fetch data kegiatan dari API
+                    kegiatanCheckTimeout = setTimeout(() => {
+                        fetch(`/api/get-kegiatan/${encodeURIComponent(namaKegiatan)}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(kegiatanData => {
+                                if (kegiatanData.success && kegiatanData.data) {
+                                    waktuPelaksanaanInput.value = kegiatanData.data.waktu_pelaksanaan || '';
+                                    tempatPelaksanaanInput.value = kegiatanData.data.tempat_pelaksanaan || '';
+                                } else {
+                                    // Jika tidak ditemukan, kosongkan field
+                                    console.warn('Kegiatan tidak ditemukan:', kegiatanData.message || 'Unknown error');
+                                    waktuPelaksanaanInput.value = '';
+                                    tempatPelaksanaanInput.value = '';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching kegiatan:', error);
+                                waktuPelaksanaanInput.value = '';
+                                tempatPelaksanaanInput.value = '';
+                            });
+                    }, 300);
+                } else {
+                    // Jika tidak ada pilihan, kosongkan field
+                    waktuPelaksanaanInput.value = '';
+                    tempatPelaksanaanInput.value = '';
+                }
+            });
+
+            // Auto-fill saat halaman pertama kali dimuat jika sudah ada kegiatan yang dipilih
+            const initialKegiatan = namaKegiatanSelect.value.trim();
+            if (initialKegiatan) {
+                // Trigger fetch untuk mengisi waktu dan tempat pelaksanaan
+                fetch(`/api/get-kegiatan/${encodeURIComponent(initialKegiatan)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(kegiatanData => {
+                        if (kegiatanData.success && kegiatanData.data) {
+                            waktuPelaksanaanInput.value = kegiatanData.data.waktu_pelaksanaan || '';
+                            tempatPelaksanaanInput.value = kegiatanData.data.tempat_pelaksanaan || '';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching kegiatan on page load:', error);
+                    });
+            }
+
+            // Sync hidden input untuk select yang disabled (jenis_kelamin dan agama)
+            const jenisKelaminSelect = document.getElementById('jenis_kelamin');
+            const jenisKelaminHidden = document.getElementById('jenis_kelamin_hidden');
+            const agamaSelect = document.getElementById('agama');
+            const agamaHidden = document.getElementById('agama_hidden');
+
+            if (jenisKelaminSelect && jenisKelaminHidden) {
+                // Update hidden input saat select berubah (jika ada perubahan programmatic)
+                jenisKelaminSelect.addEventListener('change', function() {
+                    jenisKelaminHidden.value = this.value;
+                });
+                // Set initial value
+                if (jenisKelaminSelect.value) {
+                    jenisKelaminHidden.value = jenisKelaminSelect.value;
+                }
+            }
+
+            if (agamaSelect && agamaHidden) {
+                // Update hidden input saat select berubah (jika ada perubahan programmatic)
+                agamaSelect.addEventListener('change', function() {
+                    agamaHidden.value = this.value;
+                });
+                // Set initial value
+                if (agamaSelect.value) {
+                    agamaHidden.value = agamaSelect.value;
+                }
+            }
+
+            // Filter Pangkat/Golongan berdasarkan Status ASN
+            const statusAsnSelect = document.getElementById('status_asn');
+            const pangkatGolonganSelect = document.getElementById('pangkat_golongan');
+
+            if (statusAsnSelect && pangkatGolonganSelect) {
+                // Simpan semua opsi asli (clone untuk menghindari masalah DOM)
+                const allOptionsData = Array.from(pangkatGolonganSelect.options).map(opt => ({
+                    value: opt.value,
+                    text: opt.text,
+                    selected: opt.selected
+                }));
+
+                // Opsi PNS (dari Pengatur Muda, II/a sampai Pembina Utama Madya, IV/d)
+                const pnsOptions = [
+                    'Pengatur Muda, II/a',
+                    'Pengatur Muda Tkt.I, II/b',
+                    'Pengatur, II/c',
+                    'Pengatur Tkt.I, II/d',
+                    'Penata Muda, III/a',
+                    'Penata Muda Tkt.I, III/b',
+                    'Penata, III/c',
+                    'Penata Tkt.I, III/d',
+                    'Pembina, IV/a',
+                    'Pembina Tkt.I, IV/b',
+                    'Pembina Utama Muda, IV/c',
+                    'Pembina Utama Madya, IV/d'
+                ];
+
+                function filterPangkatGolongan() {
+                    const selectedStatus = statusAsnSelect.value;
+                    const currentValue = pangkatGolonganSelect.value;
+
+                    // Hapus semua opsi kecuali opsi pertama (placeholder)
+                    while (pangkatGolonganSelect.options.length > 1) {
+                        pangkatGolonganSelect.remove(1);
+                    }
+
+                    // Filter opsi berdasarkan status ASN
+                    let optionsToShow = [];
+                    if (selectedStatus === 'PNS') {
+                        // Tampilkan hanya opsi PNS
+                        optionsToShow = allOptionsData.filter(opt => pnsOptions.includes(opt.value));
+                    } else if (selectedStatus === 'PPPK') {
+                        // Tampilkan opsi PPPK
+                        optionsToShow = allOptionsData.filter(opt => opt.value.startsWith('PPPK Gol.'));
+                    } else if (selectedStatus === 'Non ASN') {
+                        // Tampilkan opsi Non ASN
+                        optionsToShow = allOptionsData.filter(opt => opt.value === 'Non ASN');
+                    } else {
+                        // Tampilkan semua opsi jika belum dipilih
+                        optionsToShow = allOptionsData.filter(opt => opt.value !== '');
+                    }
+
+                    // Tambahkan opsi yang difilter
+                    optionsToShow.forEach(optData => {
+                        const option = document.createElement('option');
+                        option.value = optData.value;
+                        option.textContent = optData.text;
+                        pangkatGolonganSelect.appendChild(option);
+                    });
+
+                    // Set value kembali jika masih valid, jika tidak reset
+                    if (currentValue && Array.from(pangkatGolonganSelect.options).some(opt => opt.value === currentValue)) {
+                        pangkatGolonganSelect.value = currentValue;
+                    } else {
+                        pangkatGolonganSelect.value = '';
+                    }
+                }
+
+                // Event listener untuk perubahan status ASN
+                statusAsnSelect.addEventListener('change', filterPangkatGolongan);
+
+                // Panggil fungsi saat halaman pertama kali dimuat
+                filterPangkatGolongan();
+            }
+         });
+     </script>
+    <script src="{{ url_for('static', filename='js/sweetalert-flash.js') }}"></script>
+</body>
+</html>
+

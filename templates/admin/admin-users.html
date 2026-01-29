@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGTK SULTENG - Daftar Operator</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='TUT.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="{{ url_for('static', filename='LOGO.png') }}" alt="BGTK Sulteng" class="sidebar-logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+                    <span class="sidebar-icon icon-dashboard" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 3h8v8H3V3zm10 0h8v5h-8V3zm0 7h8v11h-8V10zM3 13h8v8H3v-8z"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Dashboard</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin_kegiatan') }}" class="sidebar-link {% if 'kegiatan' in request.path and 'edit-kegiatan' not in request.path and 'detail' not in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-kegiatan" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
+                            <path d="M9 3V2h6v1m-5 5h4m-4 4h4m-4 4h4"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Kegiatan</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin_rekap_filter') }}" class="sidebar-link {% if 'rekap-filter' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-rekap" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10Z"/>
+                            <circle cx="12" cy="11" r="2.2"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Rekap Filter</span>
+                    </div>
+                </a>
+                {% if user_role != 'operator' %}
+                <a href="{{ url_for('admin_users') }}" class="sidebar-link {% if 'users' in request.path or 'edit-operator' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon icon-users" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+                            <circle cx="10" cy="8" r="4"/>
+                            <path d="M21 21v-2a3 3 0 0 0-2-2.82m-3-11.65a3 3 0 0 1 0 5.94"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Operator</span>
+                    </div>
+                </a>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="sidebar-link sidebar-link--logout">
+                    <span class="sidebar-icon icon-logout" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 17l5-5-5-5"/>
+                            <path d="M20 12H9"/>
+                            <path d="M13 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/>
+                        </svg>
+                    </span>
+                    <div class="sidebar-link-text">
+                        <span class="sidebar-title">Logout</span>
+                    </div>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="topbar">
+                <div class="topbar-title">Selamat Datang, {{ user_display_name or 'Admin' }}!</div>
+                <div class="profile-menu">
+                    <button type="button" class="profile-btn" id="profileBtn">Profil</button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="profile-name">{{ user_display_name or 'Admin' }}</div>
+                        <a href="{{ url_for('change_password') }}">Ubah Password</a>
+                    </div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="header">
+                    <div>
+                        <h1>Daftar Operator</h1>
+                        <p class="header-subtitle">Daftar semua operator yang terdaftar dalam sistem.</p>
+                        {% if user_role != 'operator' %}
+                        <div style="margin-top: 15px;">
+                            <a href="{{ url_for('admin_tambah_operator') }}" 
+                               style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #067ac1 0%, #045a96 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(6, 122, 193, 0.3); transition: box-shadow 0.2s ease;">
+                                Tambah
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages" style="display: none;">
+                            {% for category, message in messages %}
+                                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="kegiatan-card">
+                    {% if operators_list %}
+                        <div class="kegiatan-table-wrapper">
+                            <table id="operatorTable" class="kegiatan-table">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th style="display: none;">ID</th>
+                                        <th>Nama Operator</th>
+                                        <th>Kegiatan yang Diikuti</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for operator in operators_list %}
+                                    <tr>
+                                        <td></td>
+                                        <td style="display: none;">{{ operator.id }}</td>
+                                        <td><strong>{{ operator.nama or operator.username }}</strong><br><small style="color: #666;">{{ operator.username }}</small></td>
+                                        <td>
+                                            {% if operator.kegiatan_list %}
+                                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                                    {% for kegiatan in operator.kegiatan_list %}
+                                                        <span style="display: inline-flex; align-items: center; padding: 4px 10px; background: #e0f2fe; color: #0369a1; border-radius: 12px; font-size: 0.875rem; white-space: nowrap; gap: 6px;">
+                                                            {{ kegiatan.nama_kegiatan }}
+                                                            <button type="button"
+                                                                    class="btn-hapus-kegiatan"
+                                                                    data-operator-id="{{ operator.id }}"
+                                                                    data-kegiatan-id="{{ kegiatan.kegiatan_id }}"
+                                                                    data-kegiatan-name="{{ kegiatan.nama_kegiatan }}"
+                                                                    onclick="hapusKegiatanOperatorFromButton(this)"
+                                                                    style="background: transparent; border: none; color: #dc2626; cursor: pointer; padding: 0; margin: 0; font-size: 14px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; transition: background 0.2s;"
+                                                                    title="Hapus kegiatan">
+                                                                ×
+                                                            </button>
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <span style="color: #999; font-style: italic;">Tidak ada kegiatan</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="action-cell">
+                                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-start;">
+                                                <button type="button"
+                                                        class="btn-tambah-kegiatan"
+                                                        data-operator-id="{{ operator.id }}"
+                                                        data-operator-name="{{ operator.nama or operator.username }}"
+                                                        data-operator-kegiatan='{{ operator.kegiatan_list|map(attribute="kegiatan_id")|list|tojson }}'
+                                                        onclick="showTambahKegiatanPopupFromButton(this)"
+                                                        style="padding: 8px 16px; background: #067ac1; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; white-space: nowrap;">
+                                                    Tambah Kegiatan
+                                                </button>
+                                                <div style="position: relative; display: inline-block;">
+                                                    <button type="button"
+                                                            class="btn-aksi"
+                                                            onclick="toggleAksiMenu(this)"
+                                                            style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+                                                        Aksi
+                                                        <span style="font-size: 0.75rem;">▼</span>
+                                                    </button>
+                                                    <div class="aksi-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000; min-width: 180px; overflow: hidden;">
+                                                        {% if user_role != 'operator' %}
+                                                        <a href="{{ url_for('admin_edit_operator', operator_id=operator.id) }}"
+                                                                class="btn-edit-dropdown"
+                                                                onclick="closeAksiMenu(this);"
+                                                                style="display: block; width: 100%; padding: 10px 16px; background: transparent; color: #067ac1; border: none; text-align: left; font-size: 0.875rem; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; text-decoration: none;">
+                                                            Edit
+                                                        </a>
+                                                        {% endif %}
+                                                        <button type="button"
+                                                                class="btn-reset-dropdown"
+                                                                data-operator-id="{{ operator.id }}"
+                                                                data-operator-name="{{ operator.nama or operator.username }}"
+                                                                onclick="handleResetPasswordFromButton(this); closeAksiMenu(this);"
+                                                                style="display: block; width: 100%; padding: 10px 16px; background: transparent; color: #d97706; border: none; text-align: left; font-size: 0.875rem; cursor: pointer; transition: background 0.2s ease, color 0.2s ease;">
+                                                            Reset Password
+                                                        </button>
+                                                        {% if user_role != 'operator' %}
+                                                        <!-- <button type="button"
+                                                                class="btn-hapus-dropdown"
+                                                                data-operator-id="{{ operator.id }}"
+                                                                data-operator-name="{{ operator.nama or operator.username }}"
+                                                                onclick="handleHapusOperatorFromButton(this); closeAksiMenu(this);"
+                                                                style="display: block; width: 100%; padding: 10px 16px; background: transparent; color: #dc2626; border: none; text-align: left; font-size: 0.875rem; cursor: pointer; transition: background 0.2s ease, color 0.2s ease;">
+                                                            Hapus
+                                                        </button> -->
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>Belum ada operator yang terdaftar.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .action-cell {
+            min-width: 280px;
+        }
+        .btn-edit-dropdown:hover {
+            background: #eff6ff !important;
+            color: #045a96 !important;
+        }
+        .btn-reset-dropdown:hover {
+            background: #fef3c7 !important;
+            color: #b45309 !important;
+        }
+        .btn-hapus-dropdown:hover {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+        }
+        .btn-tambah-kegiatan:hover {
+            background: #0563a3 !important;
+        }
+        .btn-hapus-kegiatan:hover {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+        }
+        .aksi-dropdown {
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        .aksi-dropdown > :not(:first-child) {
+            border-top: 1px solid #f3f4f6;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .kegiatan-popup-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .kegiatan-popup-item {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 5px 0;
+            text-align: left;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #333;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .kegiatan-popup-item:hover {
+            background: #067ac1;
+            color: white;
+            border-color: #067ac1;
+        }
+        .kegiatan-popup-empty {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* DataTables Styling */
+        #operatorTable_wrapper {
+            margin-top: 0;
+        }
+        #operatorTable_wrapper .dataTables_filter {
+            margin-bottom: 15px;
+        }
+        #operatorTable_wrapper .dataTables_filter input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        #operatorTable_wrapper .dataTables_length select {
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        #operatorTable_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 10px;
+            margin: 0 2px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 12px;
+        }
+        #operatorTable_wrapper .dataTables_paginate .paginate_button.current {
+            background: #067ac1;
+            color: white;
+            border-color: #067ac1;
+        }
+        #operatorTable_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+        #operatorTable_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #045a96;
+            border-color: #045a96;
+        }
+        #operatorTable_wrapper .dataTables_info {
+            color: #6b7280;
+            font-size: 12px;
+        }
+        #operatorTable_wrapper .dataTables_paginate {
+            font-size: 12px;
+        }
+    </style>
+
+    <script>
+        // Profile menu toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profileDropdown = document.getElementById('profileDropdown');
+
+            if (profileBtn && profileDropdown) {
+                profileBtn.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    profileDropdown.classList.toggle('show');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!profileDropdown.contains(event.target) && event.target !== profileBtn && !profileBtn.contains(event.target)) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+            }
+        });
+
+        // Fungsi untuk toggle menu aksi
+        function toggleAksiMenu(button) {
+            const dropdown = button.nextElementSibling;
+            const isOpen = dropdown.style.display === 'block';
+
+            // Tutup semua dropdown lainnya
+            document.querySelectorAll('.aksi-dropdown').forEach(function(menu) {
+                menu.style.display = 'none';
+            });
+
+            // Toggle dropdown ini
+            dropdown.style.display = isOpen ? 'none' : 'block';
+        }
+
+        // Fungsi untuk menutup menu aksi
+        function closeAksiMenu(button) {
+            const dropdown = button.closest('.aksi-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        // Tutup dropdown saat klik di luar
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.btn-aksi') && !event.target.closest('.aksi-dropdown')) {
+                document.querySelectorAll('.aksi-dropdown').forEach(function(menu) {
+                    menu.style.display = 'none';
+                });
+            }
+        });
+
+        // Fungsi helper untuk reset password
+        function handleResetPasswordFromButton(button) {
+            const operatorId = parseInt(button.getAttribute('data-operator-id'));
+            const operatorName = button.getAttribute('data-operator-name');
+            if (typeof handleResetPassword === 'function') {
+                handleResetPassword(operatorId, operatorName);
+            }
+        }
+
+        // Fungsi helper untuk hapus operator
+        function handleHapusOperatorFromButton(button) {
+            const operatorId = parseInt(button.getAttribute('data-operator-id'));
+            const operatorName = button.getAttribute('data-operator-name');
+            if (typeof handleHapusOperator === 'function') {
+                handleHapusOperator(operatorId, operatorName);
+            }
+        }
+
+        // Fungsi helper untuk show tambah kegiatan popup
+        function showTambahKegiatanPopupFromButton(button) {
+            const operatorId = parseInt(button.getAttribute('data-operator-id'));
+            const operatorName = button.getAttribute('data-operator-name');
+            showTambahKegiatanPopup(operatorId, operatorName);
+        }
+
+        // Popup untuk menambahkan kegiatan ke operator
+        function showTambahKegiatanPopup(operatorId, operatorName) {
+            // Ambil data kegiatan dari window object
+            const kegiatanList = window.allKegiatanList || [];
+
+            // Ambil semua kegiatan yang sudah dipilih oleh operator manapun (filter global)
+            const allSelectedIds = (window.allSelectedKegiatanIds || []).map(id => parseInt(id));
+
+            // Filter kegiatan yang belum dipilih oleh operator manapun
+            const availableKegiatan = kegiatanList.filter(function(kegiatan) {
+                const kegiatanId = parseInt(kegiatan.id);
+                return !allSelectedIds.includes(kegiatanId);
+            });
+
+            if (availableKegiatan.length === 0) {
+                Swal.fire({
+                    title: 'Tambah Kegiatan',
+                    html: `<p>Semua kegiatan sudah dilaksanakan.</p>`,
+                    icon: 'info',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#067ac1'
+                });
+                return;
+            }
+
+            // Buat HTML untuk list kegiatan
+            let kegiatanListHTML = '<div class="kegiatan-popup-list" id="kegiatanPopupList">';
+            availableKegiatan.forEach(function(kegiatan) {
+                kegiatanListHTML += `
+                    <button type="button"
+                            class="kegiatan-popup-item"
+                            data-operator-id="${operatorId}"
+                            data-kegiatan-id="${kegiatan.id}"
+                            data-kegiatan-name="${escapeHtml(kegiatan.nama_kegiatan)}">
+                        ${escapeHtml(kegiatan.nama_kegiatan)}
+                    </button>
+                `;
+            });
+            kegiatanListHTML += '</div>';
+
+            // Tampilkan popup
+            Swal.fire({
+                title: 'Pilih Kegiatan',
+                html: `<p style="margin-bottom: 15px;">Pilih kegiatan untuk operator <strong>${escapeHtml(operatorName)}</strong>:</p>${kegiatanListHTML}`,
+                icon: 'question',
+                showCancelButton: true,
+                cancelButtonText: 'Batal',
+                cancelButtonColor: '#6b7280',
+                showConfirmButton: false,
+                width: '500px',
+                didOpen: () => {
+                    // Tambahkan event listener untuk setiap tombol kegiatan
+                    const kegiatanItems = Swal.getHtmlContainer().querySelectorAll('.kegiatan-popup-item');
+                    kegiatanItems.forEach(function(item) {
+                        item.addEventListener('click', function() {
+                            const opId = parseInt(item.getAttribute('data-operator-id'));
+                            const kegId = parseInt(item.getAttribute('data-kegiatan-id'));
+                            const kegName = item.getAttribute('data-kegiatan-name');
+                            selectKegiatan(opId, kegId, kegName);
+                        });
+                    });
+                }
+            });
+        }
+
+        // Fungsi untuk memilih kegiatan dan submit form
+        function selectKegiatan(operatorId, kegiatanId, kegiatanName) {
+            Swal.fire({
+                title: 'Konfirmasi Tambah Kegiatan',
+                html: `Apakah Anda yakin ingin menambahkan kegiatan <strong>"${escapeHtml(kegiatanName)}"</strong> ke operator ini?<br><br><small style="color: #6b7280;">Operator akan memiliki akses untuk mengelola kegiatan ini.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#067ac1',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Tambahkan',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form
+                    submitTambahKegiatan(operatorId, kegiatanId);
+                }
+            });
+        }
+
+        // Submit form untuk menambahkan kegiatan
+        function submitTambahKegiatan(operatorId, kegiatanId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/operator/${operatorId}/tambah-kegiatan`;
+
+            // Tambahkan CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = getCSRFToken();
+            form.appendChild(csrfInput);
+
+            // Tambahkan kegiatan_id
+            const kegiatanInput = document.createElement('input');
+            kegiatanInput.type = 'hidden';
+            kegiatanInput.name = 'kegiatan_id';
+            kegiatanInput.value = kegiatanId;
+            form.appendChild(kegiatanInput);
+
+            // Submit form
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Fungsi helper untuk menghapus kegiatan dari operator
+        function hapusKegiatanOperatorFromButton(button) {
+            const operatorId = parseInt(button.getAttribute('data-operator-id'));
+            const kegiatanId = parseInt(button.getAttribute('data-kegiatan-id'));
+            const kegiatanName = button.getAttribute('data-kegiatan-name');
+            hapusKegiatanOperator(operatorId, kegiatanId, kegiatanName);
+        }
+
+        // Fungsi untuk menghapus kegiatan dari operator
+        function hapusKegiatanOperator(operatorId, kegiatanId, kegiatanName) {
+            Swal.fire({
+                title: 'Konfirmasi Hapus Kegiatan',
+                html: `Apakah Anda yakin ingin menghapus kegiatan <strong>"${escapeHtml(kegiatanName)}"</strong> dari operator ini?<br><br><small style="color: #dc2626;">Operator akan kehilangan akses untuk mengelola kegiatan ini. Tindakan ini dapat dibatalkan dengan menambahkan kembali kegiatan.</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                allowOutsideClick: false,
+                allowEscapeKey: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form untuk menghapus
+                    submitHapusKegiatan(operatorId, kegiatanId);
+                }
+            });
+        }
+
+        // Submit form untuk menghapus kegiatan
+        function submitHapusKegiatan(operatorId, kegiatanId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/operator/${operatorId}/hapus-kegiatan/${kegiatanId}`;
+
+            // Tambahkan CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = getCSRFToken();
+            form.appendChild(csrfInput);
+
+            // Submit form
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Fungsi untuk escape HTML (prevent XSS) - digunakan untuk fungsi yang tidak ada di file eksternal
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // Fungsi untuk mendapatkan CSRF token - digunakan untuk fungsi yang tidak ada di file eksternal
+        function getCSRFToken() {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                return metaTag.getAttribute('content');
+            }
+            const csrfInput = document.querySelector('input[name="csrf_token"]');
+            if (csrfInput) {
+                return csrfInput.value;
+            }
+            if (window.csrfToken) {
+                return window.csrfToken;
+            }
+            return null;
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/sweetalert-flash.js') }}"></script>
+    <script type="application/json" id="kegiatan-data">{{ kegiatan_list|tojson }}</script>
+    <script type="application/json" id="selected-kegiatan-data">{{ all_selected_kegiatan_ids|tojson }}</script>
+    <script>
+        // Set CSRF token untuk file JavaScript eksternal
+        window.csrfToken = '{{ csrf_token() }}';
+
+        // Simpan data kegiatan yang tersedia untuk JavaScript
+        const kegiatanDataEl = document.getElementById('kegiatan-data');
+        const selectedKegiatanDataEl = document.getElementById('selected-kegiatan-data');
+        if (kegiatanDataEl) {
+            window.allKegiatanList = JSON.parse(kegiatanDataEl.textContent);
+        } else {
+            window.allKegiatanList = [];
+        }
+
+        // Simpan semua kegiatan yang sudah dipilih oleh operator manapun (untuk filter global)
+        if (selectedKegiatanDataEl) {
+            window.allSelectedKegiatanIds = JSON.parse(selectedKegiatanDataEl.textContent);
+        } else {
+            window.allSelectedKegiatanIds = [];
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/reset-password.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/hapus-operator.js') }}"></script>
+    <script>
+        // Inisialisasi DataTables (Daftar Operator)
+        $(document).ready(function() {
+            if ($('#operatorTable').length) {
+                $('#operatorTable').DataTable({
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Semua']],
+                    order: [[1, 'asc']],
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
+                    },
+                    columnDefs: [
+                        { targets: 0, orderable: false, searchable: false },
+                        { targets: 1, visible: false, searchable: false },
+                        { targets: 4, orderable: false, searchable: false }
+                    ],
+                    drawCallback: function(settings) {
+                        const api = this.api();
+                        const pageInfo = api.page.info();
+                        api.column(0, { page: 'current' }).nodes().each(function(cell, i) {
+                            cell.innerHTML = pageInfo.start + i + 1;
+                        });
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -150,49 +150,7 @@
                     </form>
                 </div>
 
-                {% if kegiatan_list %}
-                <div class="kegiatan-list-card">
-                    <h2>Daftar Kegiatan yang Telah Ditambahkan</h2>
-                    <div class="kegiatan-table-wrapper">
-                        <table class="kegiatan-table">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Kegiatan</th>
-                                    <th>Waktu Pelaksanaan</th>
-                                    <th>Tempat Pelaksanaan</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for kegiatan in kegiatan_list %}
-                                <tr>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ kegiatan.nama_kegiatan }}</td>
-                                    <td>{{ kegiatan.waktu_pelaksanaan }}</td>
-                                    <td>{{ kegiatan.tempat_pelaksanaan }}</td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="{% if user_role == 'operator' %}{{ url_for('operator_edit_kegiatan', kegiatan_id=kegiatan.id) }}{% else %}{{ url_for('admin_edit_kegiatan', kegiatan_id=kegiatan.id) }}{% endif %}" class="btn-action btn-edit">Edit</a>
-                                            {% if user_role != 'operator' %}
-                                            <!-- <button type="button"-->
-                                            <!--        class="btn-action btn-hapus"-->
-                                            <!--        data-kegiatan-id="{{ kegiatan.id }}"-->
-                                            <!--        data-kegiatan-name="{{ kegiatan.nama_kegiatan }}"-->
-                                            <!--        onclick="handleHapusKegiatanFromButton(this)"-->
-                                            <!--        style="padding: 6px 12px; margin: 0 4px; background: #dc2626; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background 0.2s;">-->
-                                            <!--    🗑️ Hapus-->
-                                            <!--</button> -->
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {% endif %}
+                {# Daftar kegiatan yang telah ditambahkan disembunyikan sesuai permintaan #}
             </div>
         </main>
     </div>

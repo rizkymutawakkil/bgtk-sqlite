@@ -48,7 +48,7 @@
                         </svg>
                     </span>
                     <div class="sidebar-link-text">
-                        <span class="sidebar-title">Rekap Filter</span>
+                        <span class="sidebar-title">Rekap</span>
                     </div>
                 </a>
                 {% if user_role != 'operator' %}
@@ -201,11 +201,29 @@
 
                         <div class="form-group">
                             <label for="jenis_kelamin">Jenis Kelamin <span class="required">*</span></label>
-                            <select id="jenis_kelamin" name="jenis_kelamin" class="form-select" required>
-                                <option value="" disabled {% if not biodata or not biodata.jenis_kelamin %}selected{% endif %}>-Select-</option>
-                                <option value="Laki-laki" {% if biodata and biodata.jenis_kelamin == 'Laki-laki' %}selected{% endif %}>Laki-laki</option>
-                                <option value="Perempuan" {% if biodata and biodata.jenis_kelamin == 'Perempuan' %}selected{% endif %}>Perempuan</option>
-                            </select>
+                            <div class="radio-pills" role="radiogroup" aria-label="Jenis Kelamin">
+                                <div class="radio-pill">
+                                    <input
+                                        type="radio"
+                                        id="jk_laki_admin"
+                                        name="jenis_kelamin"
+                                        value="Laki-laki"
+                                        {% if biodata and biodata.jenis_kelamin == 'Laki-laki' %}checked{% endif %}
+                                        {% if not biodata or not biodata.jenis_kelamin %}required{% endif %}
+                                    >
+                                    <label for="jk_laki_admin">Laki-laki</label>
+                                </div>
+                                <div class="radio-pill">
+                                    <input
+                                        type="radio"
+                                        id="jk_perempuan_admin"
+                                        name="jenis_kelamin"
+                                        value="Perempuan"
+                                        {% if biodata and biodata.jenis_kelamin == 'Perempuan' %}checked{% endif %}
+                                    >
+                                    <label for="jk_perempuan_admin">Perempuan</label>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group">

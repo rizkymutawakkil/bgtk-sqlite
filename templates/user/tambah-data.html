@@ -150,11 +150,30 @@
 
                 <div class="form-group">
                     <label for="jenis_kelamin">Jenis Kelamin <span class="required">*</span></label>
-                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-select" required>
-                        <option value="" disabled {% if not biodata or not biodata.jenis_kelamin %}selected{% endif %}>-Select-</option>
-                        <option value="Laki-laki" {% if biodata and biodata.jenis_kelamin == 'Laki-laki' %}selected{% endif %}>Laki-laki</option>
-                        <option value="Perempuan" {% if biodata and biodata.jenis_kelamin == 'Perempuan' %}selected{% endif %}>Perempuan</option>
-                    </select>
+                    <div class="radio-pills" id="jenis_kelamin" role="radiogroup" aria-label="Jenis Kelamin">
+                        <div class="radio-pill">
+                            <input
+                                type="radio"
+                                id="jk_laki"
+                                name="jenis_kelamin_display"
+                                value="Laki-laki"
+                                {% if biodata and biodata.jenis_kelamin == 'Laki-laki' %}checked{% endif %}
+                                {% if not biodata or not biodata.jenis_kelamin %}required{% endif %}
+                            >
+                            <label for="jk_laki">Laki-laki</label>
+                        </div>
+                        <div class="radio-pill">
+                            <input
+                                type="radio"
+                                id="jk_perempuan"
+                                name="jenis_kelamin_display"
+                                value="Perempuan"
+                                {% if biodata and biodata.jenis_kelamin == 'Perempuan' %}checked{% endif %}
+                            >
+                            <label for="jk_perempuan">Perempuan</label>
+                        </div>
+                    </div>
+                    <!-- Hidden input tetap dipakai agar nilai terkirim saat field dikunci (disabled) -->
                     <input type="hidden" id="jenis_kelamin_hidden" name="jenis_kelamin" value="{{ biodata.jenis_kelamin if biodata and biodata.jenis_kelamin else '' }}">
                 </div>
 
@@ -386,12 +405,17 @@
                 });
 
                 // Select fields menggunakan disabled
-                const selectFields = ['jenis_kelamin', 'agama'];
+                const selectFields = ['agama'];
                 selectFields.forEach(fieldId => {
                     const field = document.getElementById(fieldId);
                     if (field) {
                         field.setAttribute('disabled', 'disabled');
                     }
+                });
+
+                // Jenis kelamin (radio) menggunakan disabled pada input radio
+                document.querySelectorAll('input[name="jenis_kelamin_display"]').forEach(function(radio) {
+                    radio.setAttribute('disabled', 'disabled');
                 });
             }
 
@@ -407,12 +431,17 @@
                 });
 
                 // Select fields: hapus disabled
-                const selectFields = ['jenis_kelamin', 'agama'];
+                const selectFields = ['agama'];
                 selectFields.forEach(fieldId => {
                     const field = document.getElementById(fieldId);
                     if (field) {
                         field.removeAttribute('disabled');
                     }
+                });
+
+                // Jenis kelamin (radio): hapus disabled
+                document.querySelectorAll('input[name="jenis_kelamin_display"]').forEach(function(radio) {
+                    radio.removeAttribute('disabled');
                 });
             }
 
@@ -432,7 +461,7 @@
                 });
 
                 // Clear semua select dropdowns (reset ke default)
-                const selectInputs = ['nama_kegiatan', 'jenis_kelamin', 'agama', 'pendidikan_terakhir',
+                const selectInputs = ['nama_kegiatan', 'agama', 'pendidikan_terakhir',
                                     'status_asn', 'pangkat_golongan', 'kabupaten_kota', 'peran', 'nama_bank'];
                 selectInputs.forEach(id => {
                     const select = document.getElementById(id);
@@ -442,6 +471,14 @@
                         select.dispatchEvent(new Event('change'));
                     }
                 });
+
+                // Reset jenis kelamin (radio) + hidden
+                document.querySelectorAll('input[name="jenis_kelamin_display"]').forEach(function(radio) {
+                    radio.checked = false;
+                    radio.removeAttribute('disabled');
+                });
+                const jenisKelaminHidden = document.getElementById('jenis_kelamin_hidden');
+                if (jenisKelaminHidden) jenisKelaminHidden.value = '';
 
                 // Clear file inputs
                 const bukuTabunganInput = document.getElementById('buku_tabungan');
@@ -628,13 +665,13 @@
                         setReadonlyFields();
 
                         if (biodata.jenis_kelamin) {
-                            const jenisKelaminSelect = document.getElementById('jenis_kelamin');
+                            const jkValue = biodata.jenis_kelamin || '';
                             const jenisKelaminHidden = document.getElementById('jenis_kelamin_hidden');
-                            if (jenisKelaminSelect) {
-                                jenisKelaminSelect.value = biodata.jenis_kelamin || '';
-                            }
+                            document.querySelectorAll('input[name="jenis_kelamin_display"]').forEach(function(radio) {
+                                radio.checked = (radio.value === jkValue);
+                            });
                             if (jenisKelaminHidden) {
-                                jenisKelaminHidden.value = biodata.jenis_kelamin || '';
+                                jenisKelaminHidden.value = jkValue;
                             }
                         }
 
@@ -1684,20 +1721,26 @@
                     });
             }
 
-            // Sync hidden input untuk select yang disabled (jenis_kelamin dan agama)
-            const jenisKelaminSelect = document.getElementById('jenis_kelamin');
+            // Sync hidden input untuk field yang disabled (jenis_kelamin radio dan agama select)
             const jenisKelaminHidden = document.getElementById('jenis_kelamin_hidden');
             const agamaSelect = document.getElementById('agama');
             const agamaHidden = document.getElementById('agama_hidden');
 
-            if (jenisKelaminSelect && jenisKelaminHidden) {
-                // Update hidden input saat select berubah (jika ada perubahan programmatic)
-                jenisKelaminSelect.addEventListener('change', function() {
-                    jenisKelaminHidden.value = this.value;
+            // Jenis kelamin (radio) -> hidden
+            if (jenisKelaminHidden) {
+                const jkRadios = document.querySelectorAll('input[name=\"jenis_kelamin_display\"]');
+                jkRadios.forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        if (this.checked) {
+                            jenisKelaminHidden.value = this.value;
+                        }
+                    });
                 });
-                // Set initial value
-                if (jenisKelaminSelect.value) {
-                    jenisKelaminHidden.value = jenisKelaminSelect.value;
+                // Set initial checked dari hidden jika ada
+                if (jenisKelaminHidden.value) {
+                    jkRadios.forEach(function(radio) {
+                        radio.checked = (radio.value === jenisKelaminHidden.value);
+                    });
                 }
             }
 

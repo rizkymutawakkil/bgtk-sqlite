@@ -2236,7 +2236,10 @@ def daftar_kegiatan():
 @app.route('/admin/dashboard', methods=['GET'])
 @admin_required
 def admin_dashboard():
-    """Halaman dashboard admin baru dengan statistik dan overview"""
+    """Halaman dashboard admin/operator dengan statistik dan overview. Operator hanya melihat data kegiatan yang dipegang."""
+
+    user_role = session.get('user_role', 'admin')
+    user_id = get_user_id()
 
     # Ambil statistik dari database
     stats = {
@@ -2251,29 +2254,65 @@ def admin_dashboard():
         try:
             cursor = connection.cursor()
 
-            # Total biodata
-            cursor.execute("SELECT COUNT(*) as count FROM biodata_kegiatan")
-            result = cursor.fetchone()
-            stats['total_biodata'] = result['count'] if result else 0
+            if user_role == 'operator' and user_id:
+                # Operator: hanya data kegiatan yang dipegang
+                # Total biodata (biodata dari kegiatan operator)
+                cursor.execute("""
+                    SELECT COUNT(*) as count
+                    FROM biodata_kegiatan bk
+                    INNER JOIN kegiatan_master k ON TRIM(k.nama_kegiatan) = TRIM(bk.nama_kegiatan)
+                    INNER JOIN operator_kegiatan ok ON k.id = ok.kegiatan_id
+                    WHERE ok.user_id = ?
+                """, (user_id,))
+                result = cursor.fetchone()
+                stats['total_biodata'] = result['count'] if result else 0
 
-            # Total kegiatan
-            cursor.execute("SELECT COUNT(*) as count FROM kegiatan_master WHERE TRIM(nama_kegiatan) != ''")
-            result = cursor.fetchone()
-            stats['total_kegiatan'] = result['count'] if result else 0
+                # Total kegiatan (kegiatan yang dipegang operator)
+                cursor.execute("""
+                    SELECT COUNT(*) as count
+                    FROM kegiatan_master k
+                    INNER JOIN operator_kegiatan ok ON k.id = ok.kegiatan_id
+                    WHERE ok.user_id = ? AND TRIM(k.nama_kegiatan) != ''
+                """, (user_id,))
+                result = cursor.fetchone()
+                stats['total_kegiatan'] = result['count'] if result else 0
 
-            # Total operator (hanya operator)
-            cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = 'operator'")
-            result = cursor.fetchone()
-            stats['total_users'] = result['count'] if result else 0
+                # Total operator (tetap hitung semua operator)
+                cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = 'operator'")
+                result = cursor.fetchone()
+                stats['total_users'] = result['count'] if result else 0
 
-            # Total kabupaten/kota yang berbeda
-            cursor.execute("""
-                SELECT COUNT(DISTINCT kabupaten_kota) as count
-                FROM biodata_kegiatan
-                WHERE TRIM(kabupaten_kota) != '' AND kabupaten_kota IS NOT NULL
-            """)
-            result = cursor.fetchone()
-            stats['total_kabupaten'] = result['count'] if result else 0
+                # Total kabupaten dari biodata kegiatan operator
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT bk.kabupaten_kota) as count
+                    FROM biodata_kegiatan bk
+                    INNER JOIN kegiatan_master k ON TRIM(k.nama_kegiatan) = TRIM(bk.nama_kegiatan)
+                    INNER JOIN operator_kegiatan ok ON k.id = ok.kegiatan_id
+                    WHERE ok.user_id = ? AND TRIM(bk.kabupaten_kota) != '' AND bk.kabupaten_kota IS NOT NULL
+                """, (user_id,))
+                result = cursor.fetchone()
+                stats['total_kabupaten'] = result['count'] if result else 0
+            else:
+                # Admin: semua data
+                cursor.execute("SELECT COUNT(*) as count FROM biodata_kegiatan")
+                result = cursor.fetchone()
+                stats['total_biodata'] = result['count'] if result else 0
+
+                cursor.execute("SELECT COUNT(*) as count FROM kegiatan_master WHERE TRIM(nama_kegiatan) != ''")
+                result = cursor.fetchone()
+                stats['total_kegiatan'] = result['count'] if result else 0
+
+                cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = 'operator'")
+                result = cursor.fetchone()
+                stats['total_users'] = result['count'] if result else 0
+
+                cursor.execute("""
+                    SELECT COUNT(DISTINCT kabupaten_kota) as count
+                    FROM biodata_kegiatan
+                    WHERE TRIM(kabupaten_kota) != '' AND kabupaten_kota IS NOT NULL
+                """)
+                result = cursor.fetchone()
+                stats['total_kabupaten'] = result['count'] if result else 0
 
         except sqlite3.Error as e:
             print(f"Error fetching stats: {e}")
@@ -2282,46 +2321,50 @@ def admin_dashboard():
                 cursor.close()
                 connection.close()
 
-    # Ambil data kabupaten summary untuk popup
+    # Ambil data kabupaten summary untuk popup dan grafik
     kabupaten_summary = []
     connection2 = get_db_connection()
     if connection2:
         try:
-            # Daftar lengkap 13 kabupaten/kota di Sulawesi Tengah
             all_kabupaten_list = [
-                'BANGGAI',
-                'BANGGAI KEPULAUAN',
-                'BANGGAI LAUT',
-                'BUOL',
-                'DONGGALA',
-                'MOROWALI',
-                'MOROWALI UTARA',
-                'PALU',
-                'PARIGI MOUTONG',
-                'POSO',
-                'SIGI',
-                'TOJO UNA-UNA',
-                'TOLI-TOLI'
+                'BANGGAI', 'BANGGAI KEPULAUAN', 'BANGGAI LAUT', 'BUOL', 'DONGGALA',
+                'MOROWALI', 'MOROWALI UTARA', 'PALU', 'PARIGI MOUTONG', 'POSO',
+                'SIGI', 'TOJO UNA-UNA', 'TOLI-TOLI'
             ]
+            all_kabupaten_upper = {k.upper().strip() for k in all_kabupaten_list}
 
             cursor2 = connection2.cursor()
-            # Hitung jumlah peserta per kabupaten
-            cursor2.execute("""
-                SELECT kabupaten_kota, COUNT(*) as jumlah_peserta
-                FROM biodata_kegiatan
-                WHERE TRIM(kabupaten_kota) != '' AND kabupaten_kota IS NOT NULL
-                GROUP BY kabupaten_kota
-            """)
+            if user_role == 'operator' and user_id:
+                cursor2.execute("""
+                    SELECT bk.kabupaten_kota, COUNT(*) as jumlah_peserta
+                    FROM biodata_kegiatan bk
+                    INNER JOIN kegiatan_master k ON TRIM(k.nama_kegiatan) = TRIM(bk.nama_kegiatan)
+                    INNER JOIN operator_kegiatan ok ON k.id = ok.kegiatan_id
+                    WHERE ok.user_id = ? AND TRIM(bk.kabupaten_kota) != '' AND bk.kabupaten_kota IS NOT NULL
+                    GROUP BY bk.kabupaten_kota
+                """, (user_id,))
+            else:
+                cursor2.execute("""
+                    SELECT kabupaten_kota, COUNT(*) as jumlah_peserta
+                    FROM biodata_kegiatan
+                    WHERE TRIM(kabupaten_kota) != '' AND kabupaten_kota IS NOT NULL
+                    GROUP BY kabupaten_kota
+                """)
             kabupaten_counts = {row['kabupaten_kota']: row['jumlah_peserta'] for row in cursor2.fetchall()}
 
-            # Buat summary untuk semua 13 kabupaten
+            lainnya_count = 0
+            for kab, count in kabupaten_counts.items():
+                if (kab or '').strip().upper() not in all_kabupaten_upper:
+                    lainnya_count += count
+
             for kabupaten in all_kabupaten_list:
                 kabupaten_summary.append({
                     'nama': kabupaten,
                     'jumlah_peserta': kabupaten_counts.get(kabupaten, 0)
                 })
-
-            kabupaten_summary.sort(key=lambda x: x['nama'])
+            kabupaten_summary.append({'nama': 'LAINNYA', 'jumlah_peserta': lainnya_count})
+            # Pastikan "LAINNYA" selalu paling terakhir
+            kabupaten_summary.sort(key=lambda x: ((x.get('nama') or '').strip().upper() == 'LAINNYA', x.get('nama') or ''))
         except sqlite3.Error as e:
             print(f"Error fetching kabupaten summary: {e}")
         finally:
@@ -2330,7 +2373,6 @@ def admin_dashboard():
                 connection2.close()
 
     # Tentukan role untuk template
-    user_role = session.get('user_role', 'admin')
     dashboard_title = 'Dashboard Operator' if user_role == 'operator' else 'Dashboard Admin'
 
     return render_template(
@@ -3295,7 +3337,7 @@ def admin_rekap_filter():
 @app.route('/admin/export-rekap-filter-pdf')
 @admin_required
 def export_rekap_filter_pdf():
-    """Export rekap filter ke PDF (format biodata lengkap seperti rekap tahunan) sesuai filter."""
+    """Export Rekap ke PDF (format biodata lengkap seperti rekap tahunan) sesuai filter."""
     from io import BytesIO
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
     from reportlab.lib.pagesizes import A4
@@ -3776,7 +3818,7 @@ def export_rekap_filter_pdf():
 @app.route('/admin/export-rekap-filter-excel')
 @admin_required
 def export_rekap_filter_excel():
-    """Export rekap filter ke Excel (format biodata lengkap seperti rekap tahunan) sesuai filter."""
+    """Export Rekap ke Excel (format biodata lengkap seperti rekap tahunan) sesuai filter."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
@@ -3916,7 +3958,7 @@ def export_rekap_filter_excel():
         last_col_letter = get_column_letter(num_cols)
 
         # Title (row 1) + info export (row 2) seperti rekap tahunan
-        title_text = "Rekap Filter"
+        title_text = "Rekap"
         filter_parts = []
         if selected_year:
             filter_parts.append(f"Tahun {selected_year}")
@@ -5538,12 +5580,13 @@ def admin_detail_kegiatan(nama_kegiatan):
 @app.route('/api/kabupaten-summary', methods=['GET'])
 @admin_required
 def api_kabupaten_summary():
-    """API untuk popup rekap per kabupaten di dashboard admin."""
+    """API untuk popup rekap per kabupaten di dashboard. Operator hanya melihat data kegiatan yang dipegang."""
     all_kabupaten_list = [
         'BANGGAI', 'BANGGAI KEPULAUAN', 'BANGGAI LAUT', 'BUOL', 'DONGGALA',
         'MOROWALI', 'MOROWALI UTARA', 'PALU', 'PARIGI MOUTONG', 'POSO',
         'SIGI', 'TOJO UNA-UNA', 'TOLI-TOLI'
     ]
+    all_kabupaten_upper = {k.upper().strip() for k in all_kabupaten_list}
     kabupaten_summary = []
     connection = get_db_connection()
     if not connection:
@@ -5551,15 +5594,31 @@ def api_kabupaten_summary():
     cursor = None
     try:
         cursor = connection.cursor()
-        cursor.execute("""
-            SELECT kabupaten_kota, COUNT(*) as jumlah_peserta
-            FROM biodata_kegiatan
-            WHERE TRIM(kabupaten_kota) != '' AND kabupaten_kota IS NOT NULL
-            GROUP BY kabupaten_kota
-        """)
+        user_role = get_user_role()
+        user_id = get_user_id()
+
+        if user_role == 'operator' and user_id:
+            cursor.execute("""
+                SELECT bk.kabupaten_kota, COUNT(*) as jumlah_peserta
+                FROM biodata_kegiatan bk
+                INNER JOIN kegiatan_master k ON TRIM(k.nama_kegiatan) = TRIM(bk.nama_kegiatan)
+                INNER JOIN operator_kegiatan ok ON k.id = ok.kegiatan_id
+                WHERE ok.user_id = ? AND TRIM(bk.kabupaten_kota) != '' AND bk.kabupaten_kota IS NOT NULL
+                GROUP BY bk.kabupaten_kota
+            """, (user_id,))
+        else:
+            cursor.execute("""
+                SELECT kabupaten_kota, COUNT(*) as jumlah_peserta
+                FROM biodata_kegiatan
+                WHERE TRIM(kabupaten_kota) != '' AND kabupaten_kota IS NOT NULL
+                GROUP BY kabupaten_kota
+            """)
         counts = {row['kabupaten_kota']: row['jumlah_peserta'] for row in cursor.fetchall()}
+        lainnya_count = sum(c for k, c in counts.items() if (k or '').strip().upper() not in all_kabupaten_upper)
         kabupaten_summary = [{'nama': k, 'jumlah_peserta': counts.get(k, 0)} for k in all_kabupaten_list]
-        kabupaten_summary.sort(key=lambda x: x['nama'])
+        kabupaten_summary.append({'nama': 'LAINNYA', 'jumlah_peserta': lainnya_count})
+        # Pastikan "LAINNYA" selalu paling terakhir
+        kabupaten_summary.sort(key=lambda x: ((x.get('nama') or '').strip().upper() == 'LAINNYA', x.get('nama') or ''))
     except sqlite3.Error:
         pass
     finally:
